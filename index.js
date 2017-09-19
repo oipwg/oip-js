@@ -10,6 +10,7 @@ let AlexandriaCore = (function(){
 
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
+	Core.IPFSGatewayURL = "https://gateway.ipfs.io/ipfs/";
 
 	// Define application values
 	Core.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
@@ -303,6 +304,16 @@ let AlexandriaCore = (function(){
 		if (chunks) {
 			reader.readAsDataURL(new Blob(chunks));
 		}
+	}
+
+	Core.util.buildIPFSURL = function(hash, fname){
+		let trailURL = "";
+		if (!fname){
+			trailURL = hash;
+		} else {
+			trailURL = hash + "/" + encodeURIComponent(fname);
+		}
+		return Core.IPFSGatewayURL + trailURL;
 	}
 
 	return Core;

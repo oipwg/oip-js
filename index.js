@@ -57,31 +57,29 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		Core.ipfs.on('ready', () => {
-			Core.ipfs.files.cat(hash, function (err, file) {
-				if (err){
-					console.log(err);
-					return;
-				}
+		Core.ipfs.files.cat(hash, function (err, file) {
+			if (err){
+				console.log(err);
+				return;
+			}
 
-				let stream = file;
-				let chunks = [];
-				if (stream){
-					stream.on('data', function(chunk) {
-						chunks.push(chunk);
+			let stream = file;
+			let chunks = [];
+			if (stream){
+				stream.on('data', function(chunk) {
+					chunks.push(chunk);
 
-						// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
-						Core.util.chunksToFileURL(chunks, function(data){
-							onData(data);
-						})
-					});
-					stream.on('end', function(){
-						// Core.util.chunksToFileURL(chunks, function(data){
-						// 	onData(data);
-						// })
+					// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
+					Core.util.chunksToFileURL(chunks, function(data){
+						onData(data);
 					})
-				}
-			})
+				});
+				stream.on('end', function(){
+					// Core.util.chunksToFileURL(chunks, function(data){
+					// 	onData(data);
+					// })
+				})
+			}
 		})
 	}
 
@@ -90,26 +88,24 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		Core.ipfs.on('ready', () => {
-			Core.ipfs.files.cat(hash, function (err, file) {
-				if (err){
-					console.log(err);
-					return;
-				}
+		Core.ipfs.files.cat(hash, function (err, file) {
+			if (err){
+				console.log(err);
+				return;
+			}
 
-				let stream = file;
-				let chunks = [];
-				if (stream){
-					stream.on('data', function(chunk) {
-						chunks.push(chunk);
-					});
-					stream.on('end', function(){
-						Core.util.chunksToFileURL(chunks, function(data){
-							onComplete(data);
-						})
+			let stream = file;
+			let chunks = [];
+			if (stream){
+				stream.on('data', function(chunk) {
+					chunks.push(chunk);
+				});
+				stream.on('end', function(){
+					Core.util.chunksToFileURL(chunks, function(data){
+						onComplete(data);
 					})
-				}
-			})
+				})
+			}
 		})
 	}
 
@@ -145,6 +141,14 @@ let AlexandriaCore = (function(){
 			subtype = oip['oip-041'].artifact.type.split('-')[1];
 		} catch(e) {}
 		return subtype;
+	}
+
+	Core.Artifact.getDescription = function(oip){
+		let description = "";
+		try {
+			description = oip['oip-041'].artifact.info.description;
+		} catch(e) {}
+		return description;
 	}
 
 	Core.Artifact.getFiles = function(oip){

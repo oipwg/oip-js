@@ -148,7 +148,7 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Artifact.getFiles = function(oip){
-		let files = "";
+		let files = [];
 		try {
 			files = oip['oip-041'].artifact.storage.files
 		} catch(e) {}
@@ -163,24 +163,80 @@ let AlexandriaCore = (function(){
 		return location;
 	}
 
+	Core.Artifact.getPublisherName = function(oip){
+		return oip.publisherName ? oip.publisherName : "Flotoshi";
+	}
+
+	Core.Artifact.getArtist = function(oip){
+		let artist = "";
+		try {
+			artist = oip['oip-041'].artifact.info.artist
+		} catch(e) {}
+
+		if (artist === ""){
+			try {
+				artist = Core.Artifact.getPublisherName(oip);
+			} catch(e) {}
+		}
+
+		return artist;
+	}
+
 	Core.Artifact.getThumbnail = function(oip){
 		let thumbnail;
 
-		let files = oip['oip-041'].artifact.storage.files;
-		let mainHash = oip['oip-041'].artifact.storage.location;
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
 
-		for (var i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && !files[i].sugPlay && files[i].size < Core.maxThumbnailSize && !thumbnail)
+		for (let i = 0; i < files.length; i++){
+			if (files[i].type === "Image" && files[i].sugPlay === 0 && files[i].fsize < Core.maxThumbnailSize && !thumbnail){
 				thumbnail = files[i];
+			}
 		}
 
 		let thumbnailURL = "";
 
 		if (thumbnail){
-			thumbnailURL = mainHash + "/" + thumbnail.fname;
+			thumbnailURL = location + "/" + thumbnail.fname;
 		}
 
 		return thumbnailURL;
+	}
+
+	Core.Artifact.getFirstImage = function(oip){
+		let imageGet;
+
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+
+		for (let i = 0; i < files.length; i++){
+			if (files[i].type === "Image" && !imageGet){
+				imageGet = files[i];
+			}
+		}
+
+		let imageURL = "";
+
+		if (imageGet){
+			imageURL = location + "/" + imageGet.fname;
+		}
+
+		return imageURL;
+	}
+
+	Core.Artifact.getSongs = function(oip){
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+		let artist = Core.Artifact.getArtist(oip);
+
+		let songs = [];
+
+		for (var i = 0; i < files.length; i++){
+			if (files[i].type === "Audio")
+				songs.push({fname: files[i].fname, location: location, src: "", artist: files[i].artist ? files[i].artist : artist, name: files[i].dname ? files[i].dname : files[i].fname});
+		}
+
+		return songs;
 	}
 
 	Core.Artifact.getEntypoIconForType = function(oip){

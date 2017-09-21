@@ -19,97 +19,6 @@ let AlexandriaCore = (function(){
 	Core.artifactsUpdateTimelimit = 30 * 1000;
 	Core.maxThumbnailSize = 512000;
 
-	Core.getSupportedArtifacts = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		if (Core.artifactsLastUpdate < Date.now() - Core.artifactsUpdateTimelimit){
-			Core.artifactsLastUpdate = Date.now();
-
-			let _Core = Core;
-
-			axios
-			.get(Core.OIPdURL + "/media/get/all")
-			.then(function(result) { 
-				let jsonResult = result.data;
-				Core.artifacts = jsonResult;
-				var supportedArtifacts = [];
-				for (var x = jsonResult.length -1; x >= 0; x--){
-					if (jsonResult[x]['oip-041']){
-						if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-							supportedArtifacts.push(jsonResult[x]);
-						}
-					}
-				}   
-				_Core.supportedArtifacts = supportedArtifacts;
-				callback(_Core.supportedArtifacts);
-			});
-		} else {
-			callback(Core.supportedArtifacts);
-		}
-	}
-
-	Core.getIPFS = function(callback){
-		Core.ipfs.on('ready', () => {
-			callback(Core.ipfs);
-		})
-	}
-
-	Core.getThumbnailFromIPFS = function(hash, onData){
-		// Require a hash to be passed
-		if (!hash || hash === "")
-			return;
-
-		Core.ipfs.files.cat(hash, function (err, file) {
-			if (err){
-				console.log(err);
-				return;
-			}
-
-			let stream = file;
-			let chunks = [];
-			if (stream){
-				stream.on('data', function(chunk) {
-					chunks.push(chunk);
-
-					// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
-					Core.util.chunksToFileURL(chunks, function(data){
-						onData(data);
-					})
-				});
-				stream.on('end', function(){
-					// Core.util.chunksToFileURL(chunks, function(data){
-					// 	onData(data);
-					// })
-				})
-			}
-		})
-	}
-
-	Core.getFileFromIPFS = function(hash, onComplete){
-		// Require a hash to be passed
-		if (!hash || hash === "")
-			return;
-
-		Core.ipfs.files.cat(hash, function (err, file) {
-			if (err){
-				console.log(err);
-				return;
-			}
-
-			let stream = file;
-			let chunks = [];
-			if (stream){
-				stream.on('data', function(chunk) {
-					chunks.push(chunk);
-				});
-				stream.on('end', function(){
-					Core.util.chunksToFileURL(chunks, function(data){
-						onComplete(data);
-					})
-				})
-			}
-		})
-	}
-
 	Core.Artifact = {};
 
 	Core.Artifact.getTXID = function(oip){
@@ -125,7 +34,7 @@ let AlexandriaCore = (function(){
 		try {
 			title = oip['oip-041'].artifact.info.title
 		} catch(e) {}
-		return title;
+		return Core.util.decodeMakeJSONSafe(title);
 	}
 
 	Core.Artifact.getType = function(oip){
@@ -148,8 +57,9 @@ let AlexandriaCore = (function(){
 		let description = "";
 		try {
 			description = oip['oip-041'].artifact.info.description;
+
 		} catch(e) {}
-		return description;
+		return Core.util.decodeMakeJSONSafe(description);
 	}
 
 	Core.Artifact.getFiles = function(oip){
@@ -229,6 +139,50 @@ let AlexandriaCore = (function(){
 		return imageURL;
 	}
 
+	Core.Artifact.getFirstHTML = function(oip){
+		let htmlGet;
+
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+
+		for (let i = 0; i < files.length; i++){
+			let extension = Core.util.getExtension(files[i].fname);
+			if ((extension === "html" || extension === "HTML") && !htmlGet){
+				htmlGet = files[i];
+			}
+		}
+
+		let htmlURL = "";
+
+		if (htmlGet){
+			htmlURL = location + "/" + htmlGet.fname;
+		}
+
+		return htmlURL;
+	}
+
+	Core.Artifact.getFirstHTMLURL = function(oip){
+		let htmlGet;
+
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+
+		for (let i = 0; i < files.length; i++){
+			let extension = Core.util.getExtension(files[i].fname);
+			if ((extension === "html" || extension === "HTML") && !htmlGet){
+				htmlGet = files[i];
+			}
+		}
+
+		let htmlURL = "";
+
+		if (htmlGet){
+			htmlURL = location + "/" + htmlGet.fname;
+		}
+
+		return Core.util.buildIPFSURL(htmlURL);
+	}
+
 	Core.Artifact.getSongs = function(oip){
 		let files = Core.Artifact.getFiles(oip);
 		let location = Core.Artifact.getLocation(oip);
@@ -290,6 +244,103 @@ let AlexandriaCore = (function(){
 		return paid;
 	}
 
+	Core.Data = {};
+
+	Core.Data.getSupportedArtifacts = function(callback){
+		// Check to see if we should update again, if not, just return the old data.
+		if (Core.artifactsLastUpdate < Date.now() - Core.artifactsUpdateTimelimit){
+			Core.artifactsLastUpdate = Date.now();
+
+			let _Core = Core;
+
+			Core.Network.getArtifactsFromOIPd(function(result) { 
+				let jsonResult = result.data;
+				_Core.artifacts = jsonResult;
+				var supportedArtifacts = [];
+				for (var x = jsonResult.length -1; x >= 0; x--){
+					if (jsonResult[x]['oip-041']){
+						if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
+							supportedArtifacts.push(jsonResult[x]);
+						}
+					}
+				}   
+				_Core.supportedArtifacts = supportedArtifacts;
+				callback(_Core.supportedArtifacts);
+			});
+		} else {
+			callback(Core.supportedArtifacts);
+		}
+	}
+
+	Core.Network = {};
+
+	Core.Network.getIPFS = function(callback){
+		Core.ipfs.on('ready', () => {
+			callback(Core.ipfs);
+		})
+	}
+
+	Core.Network.getThumbnailFromIPFS = function(hash, onData){
+		// Require a hash to be passed
+		if (!hash || hash === "")
+			return;
+
+		Core.ipfs.files.cat(hash, function (err, file) {
+			if (err){
+				console.log(err);
+				return;
+			}
+
+			let stream = file;
+			let chunks = [];
+			if (stream){
+				stream.on('data', function(chunk) {
+					chunks.push(chunk);
+
+					// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
+					Core.util.chunksToFileURL(chunks, function(data){
+						onData(data);
+					})
+				});
+				stream.on('end', function(){
+					// Core.util.chunksToFileURL(chunks, function(data){
+					// 	onData(data);
+					// })
+				})
+			}
+		})
+	}
+
+	Core.Network.getFileFromIPFS = function(hash, onComplete){
+		// Require a hash to be passed
+		if (!hash || hash === "")
+			return;
+
+		Core.ipfs.files.cat(hash, function (err, file) {
+			if (err){
+				console.log(err);
+				return;
+			}
+
+			let stream = file;
+			let chunks = [];
+			if (stream){
+				stream.on('data', function(chunk) {
+					chunks.push(chunk);
+				});
+				stream.on('end', function(){
+					Core.util.chunksToFileURL(chunks, function(data){
+						onComplete(data);
+					})
+				})
+			}
+		})
+	}
+
+	Core.Network.getArtifactsFromOIPd = function(callback){
+		axios.get(Core.OIPdURL + "/media/get/all").then(callback);
+	}
+
 	Core.util = {};
 
 	Core.util.chunksToFileURL = function(chunks, onLoad){
@@ -314,6 +365,21 @@ let AlexandriaCore = (function(){
 			trailURL = hash + "/" + encodeURIComponent(fname);
 		}
 		return Core.IPFSGatewayURL + trailURL;
+	}
+
+	Core.util.getExtension = function(filename){
+		let splitFilename = filename.split(".");
+		let indexToGrab = splitFilename.length - 1;
+
+		return splitFilename[indexToGrab];
+	}
+
+	Core.util.decodeMakeJSONSafe = function(stringToCheck){
+		let tmpStr = stringToCheck;
+		if (typeof tmpStr === "string" && tmpStr.substr(0,1) === '"' && tmpStr.substr(tmpStr.length-1,tmpStr.length) === '"')
+			tmpStr = eval(tmpStr);
+
+		return tmpStr;
 	}
 
 	return Core;

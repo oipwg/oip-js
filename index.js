@@ -12,14 +12,12 @@ let AlexandriaCore = (function(){
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
 	Core.IPFSGatewayURL = "https://gateway.ipfs.io/ipfs/";
 
-	// Define application values
-	Core.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
-	Core.artifacts = [];
-	Core.supportedArtifacts = [];
-	Core.artifactsUpdateTimelimit = 30 * 1000;
-	Core.maxThumbnailSize = 512000;
+	// Define URLS for things we don't control, these likely will change often
+	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
 
 	Core.Artifact = {};
+
+	Core.Artifact.maxThumbnailSize = 512000;
 
 	Core.Artifact.getTXID = function(oip){
 		let txid = "";
@@ -97,6 +95,70 @@ let AlexandriaCore = (function(){
 		return artist;
 	}
 
+	Core.Artifact.getScale = function(oip){
+		let scale = 1;
+
+		try {
+			let tmpScale = oip['oip-041'].artifact.payment.scale;
+
+			if (tmpScale && tmpScale.split(":").length === 2){
+				scale = tmpScale.split(":")[0];
+			}
+		} catch (e) {}
+
+		return scale 
+	}
+
+	Core.Artifact.getMainFile = function(oip, type){
+		let mainFile;
+
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+
+		for (let i = 0; i < files.length; i++){
+			if (files[i].type === type && !mainFile){
+				mainFile = files[i];
+			}
+		}
+
+		return mainFile;
+	}
+
+	Core.Artifact.getMainPaidFile = function(oip, type){
+		let mainFile;
+
+		let files = Core.Artifact.getFiles(oip);
+		let location = Core.Artifact.getLocation(oip);
+
+		for (let i = 0; i < files.length; i++){
+			if (files[i].type === type && (files[i].sugPlay !== 0 || files[i].sugBuy !== 0) && !mainFile){
+				mainFile = files[i];
+			}
+		}
+
+		return mainFile;
+	}
+
+	Core.Artifact.getMainFileSugPlay = function(oip, type){
+		let sugPlay = 0;
+
+		try {
+			sugPlay = Core.Artifact.getMainPaidFile(oip, type).sugPlay / Core.Artifact.getScale(oip);
+		} catch (e) {}
+
+		return sugPlay 
+	}
+
+	Core.Artifact.getMainFileSugBuy = function(oip, type){
+		let sugBuy = 0;
+
+		try {
+			sugBuy = Core.Artifact.getMainPaidFile(oip, type).sugBuy / Core.Artifact.getScale(oip);
+		} catch (e) {}
+
+		return sugBuy
+	}
+
 	Core.Artifact.getThumbnail = function(oip){
 		let thumbnail;
 
@@ -104,7 +166,7 @@ let AlexandriaCore = (function(){
 		let location = Core.Artifact.getLocation(oip);
 
 		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && files[i].sugPlay === 0 && files[i].fsize < Core.maxThumbnailSize && !thumbnail){
+			if (files[i].type === "Image" && files[i].sugPlay === 0 && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
 				thumbnail = files[i];
 			}
 		}
@@ -246,33 +308,72 @@ let AlexandriaCore = (function(){
 
 	Core.Data = {};
 
+	Core.Data.supportedArtifacts = [];
+
 	Core.Data.getSupportedArtifacts = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		if (Core.artifactsLastUpdate < Date.now() - Core.artifactsUpdateTimelimit){
-			Core.artifactsLastUpdate = Date.now();
+		let _Core = Core;
 
-			let _Core = Core;
-
-			Core.Network.getArtifactsFromOIPd(function(result) { 
-				let jsonResult = result.data;
-				_Core.artifacts = jsonResult;
-				var supportedArtifacts = [];
-				for (var x = jsonResult.length -1; x >= 0; x--){
-					if (jsonResult[x]['oip-041']){
-						if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-							supportedArtifacts.push(jsonResult[x]);
-						}
+		Core.Network.getArtifactsFromOIPd(function(jsonResult) { 
+			var supportedArtifacts = [];
+			for (var x = jsonResult.length -1; x >= 0; x--){
+				if (jsonResult[x]['oip-041']){
+					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
+						supportedArtifacts.push(jsonResult[x]);
 					}
-				}   
-				_Core.supportedArtifacts = supportedArtifacts;
-				callback(_Core.supportedArtifacts);
-			});
-		} else {
-			callback(Core.supportedArtifacts);
-		}
+				}
+			}   
+			_Core.Data.supportedArtifacts = supportedArtifacts;
+			callback(_Core.Data.supportedArtifacts);
+		});
+	}
+
+	Core.Data.getBTCPrice = function(callback){
+		// Check to see if we should update again, if not, just return the old data.
+		Core.Network.getLatestBTCPrice(callback);
 	}
 
 	Core.Network = {};
+
+	Core.Network.cachedArtifacts = [];
+	Core.Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
+	Core.Network.artifactsUpdateTimelimit = 30 * 1000; // 30 seconds
+	Core.Network.cachedBTCPriceObj = {};
+	Core.Network.btcpriceLastUpdate = 0;
+	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+
+	Core.Network.getArtifactsFromOIPd = function(callback){
+		// Check to see if we should update again, if not, just return the old data.
+		if (Core.Network.artifactsLastUpdate < Date.now() - Core.Network.artifactsUpdateTimelimit){
+			Core.Network.artifactsLastUpdate = Date.now();
+
+			let _Core = Core;
+
+			axios.get(Core.OIPdURL + "/media/get/all").then(function(results){
+				_Core.Network.cachedArtifacts = results.data;
+				callback(_Core.Network.cachedArtifacts);
+			});
+		} else {
+			callback(Core.Network.cachedArtifacts);
+		}
+	}
+
+	Core.Network.getLatestBTCPrice = function(callback){
+		if (Core.Network.btcpriceLastUpdate < Date.now() - Core.Network.btcpriceUpdateTimelimit || Core.Network.cachedBTCPriceObj === {}){
+			Core.Network.btcpriceLastUpdate = Date.now();
+
+			let _Core = Core;
+
+			axios.get(Core.btcTickerURL).then(function(result){
+				if (result.status === 200){
+					_Core.Network.cachedBTCPriceObj = result.data;
+				}
+				
+				callback(_Core.Network.cachedBTCPriceObj["USD"].last);
+			});
+		} else {
+			callback(Core.Network.cachedBTCPriceObj["USD"].last);
+		}
+	}
 
 	Core.Network.getIPFS = function(callback){
 		Core.ipfs.on('ready', () => {
@@ -337,10 +438,6 @@ let AlexandriaCore = (function(){
 		})
 	}
 
-	Core.Network.getArtifactsFromOIPd = function(callback){
-		axios.get(Core.OIPdURL + "/media/get/all").then(callback);
-	}
-
 	Core.util = {};
 
 	Core.util.chunksToFileURL = function(chunks, onLoad){
@@ -380,6 +477,16 @@ let AlexandriaCore = (function(){
 			tmpStr = eval(tmpStr);
 
 		return tmpStr;
+	}
+
+	Core.util.calculateBTCCost = function(usd_value, callback){
+		Core.Data.getBTCPrice(function(btc_price){
+			callback(usd_value / btc_price)
+		})
+	}
+
+	Core.util.convertBTCtoBits = function(btc_value){
+		return btc_value * Math.pow(10,6);
 	}
 
 	return Core;

@@ -175,7 +175,7 @@ let AlexandriaCore = (function(){
 	Core.Artifact.getArtist = function(oip){
 		let artist = "";
 		try {
-			artist = oip['oip-041'].artifact.info.artist
+			artist = oip['oip-041'].artifact.info.extraInfo.artist
 		} catch(e) {}
 
 		if (artist === ""){

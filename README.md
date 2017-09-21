@@ -14,6 +14,7 @@ Inside of Alexandria Core there are currently 4 modules. Each of the four module
 
 Currently, we have implemented or planned the following functions:
 
+#### `Core.Artifact`
 `Core.Artifact.getTXID(oipArtifact)`: `return`s the txid of the given artifact.
 
 `Core.Artifact.getTitle(oipArtifact)`: `return`s the title of the given artifact.
@@ -44,10 +45,10 @@ Currently, we have implemented or planned the following functions:
 
 `Core.Artifact.paid(oipArtifact)`: `return`s `true` if any files have either a suggested buy price or suggested play price. Otherwise it will return false.
 
-
+#### `Core.Data`
 `Core.Data.getSupportedArtifacts(callback(supportedArtifacts))`: Provides an array of supported artifacts to the callback. All artifacts will be formatted based on the highest version supported by `alexandria-core`. Currently this is `oip-041`.
 
-
+#### `Core.Network`
 `Core.Network.getIPFS(callback)`: Passes the IPFS object to the callback after it has been successfully spawned. You are highly discouraged from using this function, but it is here for advanced functionality.
 
 `Core.Network.getThumbnailFromIPFS(hash, onDataCallback)`: Give it either an IPFS file hash or hash + subfile (i.e. `hash/filename.png`). Each time data is downloaded (i.e. on download progress), we call the onDataCallback and pass a base64 encoded version of the file. You can feed this directly into an image source and it will load fine :)
@@ -56,7 +57,7 @@ Currently, we have implemented or planned the following functions:
 
 `Core.Network.getArtifactsFromOIPd(callback)`: This will grab a copy of the latest artifacts from OIPd and return them as an array to the callback.
 
-
+#### `Core.util`
 `Core.util.chunksToFileURL(chunks, onLoad)`: This is used by the IPFS network layer to load byte arrays into a file URL reader, then return the fileURL base64 data to the `onLoad` callback.
 
 `Core.util.buildIPFSURL(hash, filename)`: `return`s a built HTTP link to the IPFS resource. Use this if you don't want to download the file, but just get the URL to access it.

@@ -1,0 +1,22 @@
+{
+  "name": "alexandria-core",
+  "version": "1.0.0",
+  "description": "The core module of Alexandria!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dloa/alexandria-core.git"
+  },
+  "keywords": [
+    "oip"
+  ],
+  "author": "Skylar Ostler <sky@alexandria.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dloa/alexandria-core/issues"
+  },
+  "homepage": "https://github.com/dloa/alexandria-core#readme"
+}

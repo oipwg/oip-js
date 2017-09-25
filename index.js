@@ -1,16 +1,25 @@
 import axios from 'axios';
-import IPFS_MAIN from 'ipfs'
-const ipfs = new IPFS_MAIN()
+try {
+	var IPFS_MAIN = require('ipfs');
+} catch (e) { 
+	console.log(e);
+}
+
 
 let AlexandriaCore = (function(){
 	let Core = {};
 
 	// Initiate all instances
-	Core.ipfs = new IPFS_MAIN();
+	try {
+		Core.ipfs = new IPFS_MAIN();
+	} catch (e) {
+		Core.ipfs = "not-supported"
+	}
+	
 
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
-	Core.IPFSGatewayURL = "https://gateway.ipfs.io/ipfs/";
+	Core.IPFSGatewayURL = "http://gateway.ipfs.io/ipfs/";
 
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
@@ -115,13 +124,23 @@ let AlexandriaCore = (function(){
 		let files = Core.Artifact.getFiles(oip);
 		let location = Core.Artifact.getLocation(oip);
 
+		if (!type){
+			type = Core.Artifact.getType(oip);
+		}
+
 		for (let i = 0; i < files.length; i++){
 			if (files[i].type === type && !mainFile){
 				mainFile = files[i];
 			}
 		}
 
-		return mainFile;
+		let fileURL = "";
+
+		if (mainFile){
+			fileURL = location + "/" + mainFile.fname;
+		}
+
+		return fileURL;
 	}
 
 	Core.Artifact.getMainPaidFile = function(oip, type){
@@ -386,30 +405,35 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		Core.ipfs.files.cat(hash, function (err, file) {
-			if (err){
-				console.log(err);
-				return;
-			}
+		try {
+			Core.ipfs.files.cat(hash, function (err, file) {
+				if (err){
+					console.log(err);
+					onData(Core.util.buildIPFSURL(hash));
+					return;
+				}
 
-			let stream = file;
-			let chunks = [];
-			if (stream){
-				stream.on('data', function(chunk) {
-					chunks.push(chunk);
+				let stream = file;
+				let chunks = [];
+				if (stream){
+					stream.on('data', function(chunk) {
+						chunks.push(chunk);
 
-					// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
-					Core.util.chunksToFileURL(chunks, function(data){
-						onData(data);
+						// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
+						Core.util.chunksToFileURL(chunks, function(data){
+							onData(data);
+						})
+					});
+					stream.on('end', function(){
+						// Core.util.chunksToFileURL(chunks, function(data){
+						// 	onData(data);
+						// })
 					})
-				});
-				stream.on('end', function(){
-					// Core.util.chunksToFileURL(chunks, function(data){
-					// 	onData(data);
-					// })
-				})
-			}
-		})
+				}
+			})
+		} catch (e){
+			onData(Core.util.buildIPFSURL(hash));
+		}
 	}
 
 	Core.Network.getFileFromIPFS = function(hash, onComplete){
@@ -457,7 +481,12 @@ let AlexandriaCore = (function(){
 	Core.util.buildIPFSURL = function(hash, fname){
 		let trailURL = "";
 		if (!fname){
-			trailURL = hash;
+			let parts = hash.split('/');
+			if (parts.length == 2){
+				trailURL = parts[0] + "/" + encodeURIComponent(parts[1]);
+			} else {
+				trailURL = hash;
+			}
 		} else {
 			trailURL = hash + "/" + encodeURIComponent(fname);
 		}

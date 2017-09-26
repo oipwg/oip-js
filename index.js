@@ -405,11 +405,12 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
+		onData(Core.util.buildIPFSURL(hash));
+
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {
 				if (err){
 					console.log(err);
-					onData(Core.util.buildIPFSURL(hash));
 					return;
 				}
 
@@ -431,9 +432,7 @@ let AlexandriaCore = (function(){
 					})
 				}
 			})
-		} catch (e){
-			onData(Core.util.buildIPFSURL(hash));
-		}
+		} catch (e){ }
 	}
 
 	Core.Network.getFileFromIPFS = function(hash, onComplete){

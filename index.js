@@ -279,9 +279,7 @@ let AlexandriaCore = (function(){
 		return songs;
 	}
 
-	Core.Artifact.getEntypoIconForType = function(oip){
-		let type = oip['oip-041'].artifact.type.split('-')[0];
-
+	Core.Artifact.getEntypoIconForType = function(type){
 		let icon;
 
 		switch(type){

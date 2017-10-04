@@ -20,6 +20,7 @@ let AlexandriaCore = (function(){
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
 	Core.IPFSGatewayURL = "http://gateway.ipfs.io/ipfs/";
+	Core.issoURL = "http://localhost:8080/";
 
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
@@ -72,7 +73,11 @@ let AlexandriaCore = (function(){
 	Core.Artifact.getFiles = function(oip){
 		let files = [];
 		try {
-			files = oip['oip-041'].artifact.storage.files
+			let tmpFiles = oip['oip-041'].artifact.storage.files;
+
+			for (let i = 0; i < tmpFiles.length; i++) {
+				files.push(tmpFiles[i])
+			}
 		} catch(e) {}
 		return files;
 	}
@@ -323,6 +328,22 @@ let AlexandriaCore = (function(){
 		return paid;
 	}
 
+	Core.Comments = {};
+
+	Core.Comments.get = function(hash, callback){
+		Core.Network.getCommentsFromISSO("/", function(results){
+			console.log(results);
+			callback(results);
+		})
+	}
+
+	Core.Comments.add = function(hash, comment, callback){
+		Core.Network.postCommentToISSO("/", {text: comment}, function(results){
+			console.log(results)
+			callback(results);
+		})
+	}
+
 	Core.Data = {};
 
 	Core.Data.supportedArtifacts = [];
@@ -457,6 +478,24 @@ let AlexandriaCore = (function(){
 				})
 			}
 		})
+	}
+
+	Core.Network.getCommentsFromISSO = function(uri, callback){
+		axios.get(Core.issoURL + "?uri=" + encodeURIComponent(uri)).then(function(results){
+			callback(results);
+		}).catch(function (error) {
+			// If there is an error, it is likely because the artifact has no comments, just return an empty array.
+			callback([]);
+		});
+	}
+
+	Core.Network.postCommentToISSO = function(uri, comment, callback){
+		axios.post(Core.issoURL + "new?uri=" + encodeURIComponent(uri), comment).then(function(results){
+			callback(results);
+		}).catch(function (error) {
+			// If there is an error, it is likely because the artifact has no comments, just return an empty array.
+			callback({error: true});
+		});
 	}
 
 	Core.util = {};

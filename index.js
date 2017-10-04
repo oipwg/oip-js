@@ -20,7 +20,7 @@ let AlexandriaCore = (function(){
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
 	Core.IPFSGatewayURL = "http://gateway.ipfs.io/ipfs/";
-	Core.issoURL = "http://localhost:8080/";
+	Core.issoURL = "http://192.168.1.69:8080/";
 
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
@@ -90,8 +90,22 @@ let AlexandriaCore = (function(){
 		return location;
 	}
 
+	Core.Artifact.getTimestamp = function(oip){
+		let timestamp = 0;
+		try {
+			timestamp = oip['oip-041'].artifact.timestamp
+		} catch(e) {}
+		return timestamp;
+	}
+
 	Core.Artifact.getPublisherName = function(oip){
-		return oip.publisherName ? oip.publisherName : "Flotoshi";
+		let pubName = "Flotoshi";
+
+		try {
+			pubName = oip.publisherName
+		} catch(e) {}
+
+		return pubName;
 	}
 
 	Core.Artifact.getArtist = function(oip){
@@ -370,6 +384,20 @@ let AlexandriaCore = (function(){
 		})
 	}
 
+	Core.Comments.like = function(id, callback){
+		Core.Network.likeISSOComment(id, function(results){
+			console.log(results)
+			callback(results);
+		})
+	}
+
+	Core.Comments.dislike = function(id, callback){
+		Core.Network.dislikeISSOComment(id, function(results){
+			console.log(results)
+			callback(results);
+		})
+	}
+
 	Core.Data = {};
 
 	Core.Data.supportedArtifacts = [];
@@ -477,7 +505,9 @@ let AlexandriaCore = (function(){
 					})
 				}
 			})
-		} catch (e){ }
+		} catch (e){ 
+			onData(Core.util.buildIPFSURL(hash));
+		}
 	}
 
 	Core.Network.getFileFromIPFS = function(hash, onComplete){
@@ -517,6 +547,24 @@ let AlexandriaCore = (function(){
 
 	Core.Network.postCommentToISSO = function(uri, comment, callback){
 		axios.post(Core.issoURL + "new?uri=" + encodeURIComponent(uri), comment).then(function(results){
+			callback(results);
+		}).catch(function (error) {
+			// If there is an error, it is likely because the artifact has no comments, just return an empty array.
+			callback({error: true});
+		});
+	}
+
+	Core.Network.likeISSOComment = function(id, callback){
+		axios.post(Core.issoURL + "id/" + id + "/like", {}).then(function(results){
+			callback(results);
+		}).catch(function (error) {
+			// If there is an error, it is likely because the artifact has no comments, just return an empty array.
+			callback({error: true});
+		});
+	}
+
+	Core.Network.dislikeISSOComment = function(id, callback){
+		axios.post(Core.issoURL + "id/" + id + "/dislike", {}).then(function(results){
 			callback(results);
 		}).catch(function (error) {
 			// If there is an error, it is likely because the artifact has no comments, just return an empty array.

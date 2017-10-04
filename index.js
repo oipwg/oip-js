@@ -183,6 +183,32 @@ let AlexandriaCore = (function(){
 		return sugBuy
 	}
 
+	Core.Artifact.getMainFileDisPlay = function(oip, type){
+		let disPlay = false;
+
+		try {
+			disPlay = Core.Artifact.getMainPaidFile(oip, type).disPlay;
+		} catch (e) {}
+
+		if (!disPlay)
+			disPlay = false;
+
+		return disPlay
+	}
+
+	Core.Artifact.getMainFileDisBuy = function(oip, type){
+		let disBuy = 0;
+
+		try {
+			disBuy = Core.Artifact.getMainPaidFile(oip, type).disBuy;
+		} catch (e) {}
+
+		if (!disBuy)
+			disBuy = false;
+
+		return disBuy
+	}
+
 	Core.Artifact.getThumbnail = function(oip){
 		let thumbnail;
 
@@ -190,7 +216,7 @@ let AlexandriaCore = (function(){
 		let location = Core.Artifact.getLocation(oip);
 
 		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && files[i].sugPlay === 0 && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
+			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
 				thumbnail = files[i];
 			}
 		}

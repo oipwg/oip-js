@@ -450,7 +450,7 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		onData(Core.util.buildIPFSURL(hash));
+		//onData(Core.util.buildIPFSURL(hash));
 
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {

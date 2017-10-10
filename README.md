@@ -25,9 +25,9 @@ Currently, we have implemented or planned the following functions:
 
 `Core.Artifact.getDescription(oipArtifactID)`: **return**s the *description* of the given artifact.
 
-`Core.Artifact.getLocation(oipArtifactID)`: If the whole artifact is free, **return**s the location address of the given artifact (This is usually the IPFS hash, unless the Artifact uses another data storage layer). If any of the artifact is commercial, **return** "permission denied"
+`Core.Artifact.getLocation(oipArtifactID)`: If the whole artifact is free, **return**s the location address of the given artifact (This is usually the IPFS hash, unless the Artifact uses another data storage layer) as **storage:location**. If any of the artifact is commercial, **return** "permission denied"
 
-`Core.Artifact.getFiles(oipArtifactID)`: **return**s the data related to the files in the given artifact, Including **dName**s, **fName**s and **playtime** and pricing fields. If any of the artifact is commercial, for all of the files which are available(free), `return`s ipfs file hashes as **fName**, and **return** "permission denied" for files which are not yet available (not yet paid for). 
+`Core.Artifact.getFiles(oipArtifactID)`: **return**s the data related to the files in the given artifact, Including **dName**s, **fName**s and **playtime** and pricing fields. If any of the artifact is commercial, for all of the files which are available(free), `return`s ipfs file hashes as **storage:files:location**, and **return** "permission denied" for files which are not yet available (not yet paid for). 
 
 `Core.Artifact.getPublisherAlias(oipArtifactID)`: **return**s the *Publisher Alias* for the *Publisher* that published the Artifact. If no *Publisher Alias* was specified, **return**s "Flotoshi"
 

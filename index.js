@@ -20,7 +20,7 @@ let AlexandriaCore = (function(){
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
 	Core.IPFSGatewayURL = "http://gateway.ipfs.io/ipfs/";
-	Core.issoURL = "http://192.168.1.69:8080/";
+	Core.issoURL = "https://isso.alexandria.io/";
 
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
@@ -371,14 +371,14 @@ let AlexandriaCore = (function(){
 	Core.Comments = {};
 
 	Core.Comments.get = function(hash, callback){
-		Core.Network.getCommentsFromISSO("/", function(results){
+		Core.Network.getCommentsFromISSO("/browser/" + hash, function(results){
 			console.log(results);
 			callback(results);
 		})
 	}
 
 	Core.Comments.add = function(hash, comment, callback){
-		Core.Network.postCommentToISSO("/", {text: comment}, function(results){
+		Core.Network.postCommentToISSO("/browser/" + hash, {text: comment}, function(results){
 			console.log(results)
 			callback(results);
 		})
@@ -546,7 +546,12 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Network.postCommentToISSO = function(uri, comment, callback){
-		axios.post(Core.issoURL + "new?uri=" + encodeURIComponent(uri), comment).then(function(results){
+		var instance = axios.create();
+
+		instance.post(Core.issoURL + "new?uri=" + encodeURIComponent(uri), comment, {headers: {"Content-Type": "application/json"}, transformRequest: [(data, headers) => {
+		    delete headers.common.Authorization
+		    return data }]
+		}).then(function(results){
 			callback(results);
 		}).catch(function (error) {
 			// If there is an error, it is likely because the artifact has no comments, just return an empty array.

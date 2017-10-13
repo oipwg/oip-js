@@ -492,12 +492,11 @@ let AlexandriaCore = (function(){
 	Core.Network.getArtifactsFromOIPd = function(callback){
 		// Check to see if we should update again, if not, just return the old data.
 		if (Core.Network.artifactsLastUpdate < Date.now() - Core.Network.artifactsUpdateTimelimit){
-			Core.Network.artifactsLastUpdate = Date.now();
-
 			let _Core = Core;
 
 			axios.get(Core.OIPdURL + "/media/get/all").then(function(results){
 				_Core.Network.cachedArtifacts = results.data;
+				_Core.Network.artifactsLastUpdate = Date.now();
 				callback(_Core.Network.cachedArtifacts);
 			});
 		} else {
@@ -507,16 +506,14 @@ let AlexandriaCore = (function(){
 
 	Core.Network.getLatestBTCPrice = function(callback){
 		if (Core.Network.btcpriceLastUpdate < Date.now() - Core.Network.btcpriceUpdateTimelimit || Core.Network.cachedBTCPriceObj === {}){
-			Core.Network.btcpriceLastUpdate = Date.now();
-
 			let _Core = Core;
 
 			axios.get(Core.btcTickerURL).then(function(result){
 				if (result.status === 200){
 					_Core.Network.cachedBTCPriceObj = result.data;
+					_Core.Network.btcpriceLastUpdate = Date.now();
+					callback(_Core.Network.cachedBTCPriceObj["USD"].last);
 				}
-				
-				callback(_Core.Network.cachedBTCPriceObj["USD"].last);
 			});
 		} else {
 			callback(Core.Network.cachedBTCPriceObj["USD"].last);

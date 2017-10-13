@@ -368,6 +368,14 @@ let AlexandriaCore = (function(){
 		return paid;
 	}
 
+	Core.Artifact.checkPaidViewFile = function(file){
+		let paid = false;
+		if (file.sugPlay)
+			paid = true;
+
+		return paid;
+	}
+
 	Core.Comments = {};
 
 	Core.Comments.get = function(hash, callback){

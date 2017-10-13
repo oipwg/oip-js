@@ -153,13 +153,13 @@ let AlexandriaCore = (function(){
 			}
 		}
 
-		let fileURL = "";
+		// let fileURL = "";
 
-		if (mainFile){
-			fileURL = location + "/" + mainFile.fname;
-		}
+		// if (mainFile){
+		// 	fileURL = location + "/" + mainFile.fname;
+		// }
 
-		return fileURL;
+		return mainFile;
 	}
 
 	Core.Artifact.getMainPaidFile = function(oip, type){

@@ -235,20 +235,20 @@ let AlexandriaCore = (function(){
 			}
 		}
 
-		let thumbnailURL = "";
+		// let thumbnailURL = "";
 
-		if (thumbnail){
-			thumbnailURL = location + "/" + thumbnail.fname;
-		}
+		// if (thumbnail){
+		// 	thumbnailURL = location + "/" + thumbnail.fname;
+		// }
 
-		return thumbnailURL;
+		return thumbnail;
 	}
 
 	Core.Artifact.getFirstImage = function(oip){
 		let imageGet;
 
 		let files = Core.Artifact.getFiles(oip);
-		let location = Core.Artifact.getLocation(oip);
+		//let location = Core.Artifact.getLocation(oip);
 
 		for (let i = 0; i < files.length; i++){
 			if (files[i].type === "Image" && !imageGet){
@@ -256,13 +256,13 @@ let AlexandriaCore = (function(){
 			}
 		}
 
-		let imageURL = "";
+		// let imageURL = "";
 
-		if (imageGet){
-			imageURL = location + "/" + imageGet.fname;
-		}
+		// if (imageGet){
+		// 	imageURL = location + "/" + imageGet.fname;
+		// }
 
-		return imageURL;
+		return imageGet;
 	}
 
 	Core.Artifact.getFirstHTML = function(oip){
@@ -422,6 +422,62 @@ let AlexandriaCore = (function(){
 	Core.Data.getBTCPrice = function(callback){
 		// Check to see if we should update again, if not, just return the old data.
 		Core.Network.getLatestBTCPrice(callback);
+	}
+
+	Core.Index = {};
+
+	Core.Index.supportedArtifacts = [];
+
+	Core.Index.getSupportedArtifacts = function(callback){
+		let _Core = Core;
+
+		Core.Network.getArtifactsFromOIPd(function(jsonResult) { 
+			var supportedArtifacts = [];
+			for (var x = jsonResult.length -1; x >= 0; x--){
+				if (jsonResult[x]['oip-041']){
+					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
+						supportedArtifacts.push(jsonResult[x]);
+					}
+				}
+			}   
+			_Core.Index.supportedArtifacts = supportedArtifacts;
+			callback(_Core.Index.supportedArtifacts);
+		});
+	}
+
+	Core.Index.getSuggestedContent = function(userid, callback){
+		let _Core = Core;
+		// In the future we will generate content specific for users, for now, just the generic is ok :)
+		// userid is not currently implemented or used.
+		Core.Index.getSupportedArtifacts(function(supportedArtifacts){
+			console.log(supportedArtifacts)
+			if (supportedArtifacts.length > 25){
+				callback(supportedArtifacts.slice(0,25));
+			} else {
+				callback(supportedArtifacts);
+			}
+		})
+	}
+
+	Core.Index.getArtifactFromID = function(id, callback){
+		let found = false;
+
+		for (var i = Core.Index.supportedArtifacts.length - 1; i >= 0; i--) {
+			if (Core.Index.supportedArtifacts[i].txid.substr(0, id.length) === id){
+				found = true;
+				callback(Core.Index.supportedArtifacts[i]);
+			}
+		}
+
+		if (!found){
+			Core.Index.getSupportedArtifacts(function(supportedArtifacts){
+				for (var i = Core.Index.supportedArtifacts.length - 1; i >= 0; i--) {
+					if (supportedArtifacts[i].txid.substr(0, id.length) === id){
+						callback(supportedArtifacts[i]);
+					}
+				}
+			})
+		}
 	}
 
 	Core.Network = {};
@@ -591,6 +647,11 @@ let AlexandriaCore = (function(){
 		if (chunks) {
 			reader.readAsDataURL(new Blob(chunks));
 		}
+	}
+
+	Core.util.buildIPFSShortURL = function(artifact, file){
+		let location = Core.Artifact.getLocation(artifact);
+		return location + "/" + file.fname;
 	}
 
 	Core.util.buildIPFSURL = function(hash, fname){

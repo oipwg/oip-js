@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/dloa/alexandria-core/issues"
   },
-  "homepage": "https://github.com/dloa/alexandria-core#readme"
+  "homepage": "https://github.com/dloa/alexandria-core#readme",
+  "dependencies": {
+    "ipfs": "^0.26.0"
+  }
 }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 try {
-	var IPFS_MAIN = require('ipfs');
+	//var IPFS_MAIN = require('ipfs');
 } catch (e) { 
 	console.log(e);
 }
@@ -11,7 +11,22 @@ let AlexandriaCore = (function(){
 
 	// Initiate all instances
 	try {
-		Core.ipfs = new IPFS_MAIN();
+		Core.ipfs = new IPFS_MAIN({
+			init: true,
+			start: true,
+			EXPERMENTAL: {
+				pubsub: true,
+				sharding: true,
+				dht: true
+			},
+			config: {
+				Addresses: {
+					Swarm: [
+						'/ip4/163.172.37.165/tcp/4001/ipfs/QmRvfRjoCCwVLbVAiYWqJJCiQKqGqSuKckv4eDKEHZXxZu'
+					]
+				}
+			}
+		});
 	} catch (e) {
 		Core.ipfs = "not-supported"
 	}
@@ -19,7 +34,7 @@ let AlexandriaCore = (function(){
 
 	// Define all of the application URLS
 	Core.OIPdURL = "https://api.alexandria.io/alexandria/v2";
-	Core.IPFSGatewayURL = "http://gateway.ipfs.io/ipfs/";
+	Core.IPFSGatewayURL = "https://gateway.ipfs.io/ipfs/";
 	Core.issoURL = "https://isso.alexandria.io/";
 
 	// Define URLS for things we don't control, these likely will change often
@@ -153,11 +168,11 @@ let AlexandriaCore = (function(){
 			}
 		}
 
-		// let fileURL = "";
-
-		// if (mainFile){
-		// 	fileURL = location + "/" + mainFile.fname;
-		// }
+		// If no file is found with the correct type, default to use the first file in the Artifact
+		if (!mainFile){
+			if (files[0])
+				mainFile = files[0];
+		}
 
 		return mainFile;
 	}
@@ -235,11 +250,13 @@ let AlexandriaCore = (function(){
 			}
 		}
 
-		// let thumbnailURL = "";
-
-		// if (thumbnail){
-		// 	thumbnailURL = location + "/" + thumbnail.fname;
-		// }
+		if (!thumbnail){
+			for (let i = 0; i < files.length; i++){
+				if (files[i].type === "Image" && !files[i].sugPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
+					thumbnail = files[i];
+				}
+			}
+		}
 
 		return thumbnail;
 	}
@@ -376,6 +393,26 @@ let AlexandriaCore = (function(){
 		return paid;
 	}
 
+	Core.Artifact.getFormattedVideoQualities = function(oip){
+		let files = Core.Artifact.getFiles(oip);
+
+		let qualityArr = [];
+
+		for (var i = files.length - 1; i >= 0; i--) {
+			if (files[i].subtype === "HD720" || 
+				files[i].subtype === "SD480" || 
+				files[i].subtype === "LOW320" || 
+				files[i].subtype === "MOB240"){
+				qualityArr.push({
+					format: files[i].subtype,
+					src: Core.util.buildIPFSURL(Core.util.buildIPFSShortURL(oip, files[i])),
+					type: "video/" + Core.util.getExtension(files[i].fname)
+				})
+			}
+
+		}
+	}
+
 	Core.Comments = {};
 
 	Core.Comments.get = function(hash, callback){
@@ -418,7 +455,8 @@ let AlexandriaCore = (function(){
 			for (var x = jsonResult.length -1; x >= 0; x--){
 				if (jsonResult[x]['oip-041']){
 					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-						supportedArtifacts.push(jsonResult[x]);
+						if (!jsonResult[x]['oip-041'].artifact.info.nsfw)
+							supportedArtifacts.push(jsonResult[x]);
 					}
 				}
 			}   
@@ -444,7 +482,8 @@ let AlexandriaCore = (function(){
 			for (var x = jsonResult.length -1; x >= 0; x--){
 				if (jsonResult[x]['oip-041']){
 					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-						supportedArtifacts.push(jsonResult[x]);
+						if (!jsonResult[x]['oip-041'].artifact.info.nsfw)
+							supportedArtifacts.push(jsonResult[x]);
 					}
 				}
 			}   

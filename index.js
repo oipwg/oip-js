@@ -1,6 +1,6 @@
 import axios from 'axios';
 try {
-	//var IPFS_MAIN = require('ipfs');
+	var IPFS_MAIN = require('ipfs');
 } catch (e) { 
 	console.log(e);
 }

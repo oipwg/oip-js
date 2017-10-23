@@ -715,6 +715,21 @@ let AlexandriaCore = (function(){
 		});
 	}
 
+	Core.User = {};
+
+	Core.User.Identifier = "";
+	Core.User.Password = "";
+
+	Core.User.Login = function(identifier, password){
+		Core.User.Identifier = identifier;
+		Core.User.Password = password;
+	}
+
+	Core.User.Logout = function(){
+		Core.User.Identifier = "";
+		Core.User.Password = "";
+	}
+
 	Core.util = {};
 
 	Core.util.chunksToFileURL = function(chunks, onLoad){

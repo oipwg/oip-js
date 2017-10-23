@@ -261,6 +261,32 @@ let AlexandriaCore = (function(){
 		return thumbnail;
 	}
 
+	Core.Artifact.getAlbumArt = function(oip){
+		let albumArt;
+
+		let files = Core.Artifact.getFiles(oip);
+
+		for (let i = 0; i < files.length; i++){
+			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && !albumArt){
+				albumArt = files[i];
+			}
+		}
+
+		if (!albumArt){
+			for (let i = 0; i < files.length; i++){
+				if (files[i].type === "Image" && files[i].subtype === "album-art" && !files[i].sugPlay && !albumArt){
+					albumArt = files[i];
+				}
+			}
+		}
+
+		if (!albumArt){
+			albumArt = Core.Artifact.getThumbnail(oip);
+		}
+
+		return albumArt;
+	}
+
 	Core.Artifact.getFirstImage = function(oip){
 		let imageGet;
 
@@ -331,11 +357,23 @@ let AlexandriaCore = (function(){
 		let location = Core.Artifact.getLocation(oip);
 		let artist = Core.Artifact.getArtist(oip);
 
+		let albumArtwork = Core.Artifact.getAlbumArt(oip);
+
+		let albumArtUrl = Core.util.buildIPFSURL(Core.util.buildIPFSShortURL(oip, albumArtwork));
+
 		let songs = [];
 
 		for (var i = 0; i < files.length; i++){
-			if (files[i].type === "Audio")
-				songs.push({fname: files[i].fname, location: location, src: "", artist: files[i].artist ? files[i].artist : artist, name: files[i].dname ? files[i].dname : files[i].fname});
+			if (files[i].type === "Audio"){
+				songs.push({
+					fname: files[i].fname, 
+					location: location, 
+					src: "", 
+					artist: files[i].artist ? files[i].artist : artist, 
+					name: files[i].dname ? files[i].dname : files[i].fname,
+					albumArtwork: albumArtUrl
+				});
+			}
 		}
 
 		return songs;

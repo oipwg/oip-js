@@ -677,25 +677,36 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		Core.ipfs.files.cat(hash, function (err, file) {
-			if (err){
-				console.log(err);
-				return;
-			}
+		let returned = false;
 
-			let stream = file;
-			let chunks = [];
-			if (stream){
-				stream.on('data', function(chunk) {
-					chunks.push(chunk);
-				});
-				stream.on('end', function(){
-					Core.util.chunksToFileURL(chunks, function(data){
-						onComplete(data);
+		try {
+			Core.ipfs.files.cat(hash, function (err, file) {
+				if (err){
+					console.log(err);
+					return;
+				}
+
+				let stream = file;
+				let chunks = [];
+				if (stream){
+					stream.on('data', function(chunk) {
+						chunks.push(chunk);
+					});
+					stream.on('end', function(){
+						Core.util.chunksToFileURL(chunks, function(data){
+							onComplete(data);
+							returned = true;
+						})
 					})
-				})
+				}
+			})
+		} catch(e) { }
+
+		setTimeout(function(){
+			if (!returned){
+				onData(Core.util.buildIPFSURL(hash));
 			}
-		})
+		}, 2 * 1000)
 	}
 
 	Core.Network.getCommentsFromISSO = function(uri, callback){

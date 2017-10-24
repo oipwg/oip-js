@@ -379,15 +379,16 @@ let AlexandriaCore = (function(){
 		for (var i = 0; i < files.length; i++){
 			if (files[i].type === "Audio"){
 				let durationNice = Core.util.formatDuration(files[i].duration);
-				songs.push({
-					fname: files[i].fname, 
-					location: location, 
-					src: "", 
-					artist: files[i].artist ? files[i].artist : artist, 
-					name: files[i].dname ? files[i].dname : files[i].fname,
-					albumArtwork: albumArtUrl,
-					length: durationNice 
-				});
+
+				let songObj = JSON.parse(JSON.stringify(files[i]));
+
+				songObj.location = location;
+				songObj.artist = files[i].artist ? files[i].artist : artist
+				songObj.name = files[i].dname ? files[i].dname : files[i].fname
+				songObj.albumArtwork = albumArtUrl
+				songObj.length = durationNice
+
+				songs.push(songObj);
 			}
 		}
 

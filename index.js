@@ -177,6 +177,19 @@ let AlexandriaCore = (function(){
 		return mainFile;
 	}
 
+	Core.Artifact.getDuration = function(oip){
+		let duration;
+
+		let files = Core.Artifact.getFiles(oip);
+
+		for (var i = files.length - 1; i >= 0; i--) {
+			if (files[i].duration && !duration)
+				duration = files[i].duration;
+		}
+
+		return Core.util.formatDuration(duration);
+	}
+
 	Core.Artifact.getMainPaidFile = function(oip, type){
 		let mainFile;
 
@@ -365,13 +378,15 @@ let AlexandriaCore = (function(){
 
 		for (var i = 0; i < files.length; i++){
 			if (files[i].type === "Audio"){
+				let durationNice = Core.util.formatDuration(files[i].duration);
 				songs.push({
 					fname: files[i].fname, 
 					location: location, 
 					src: "", 
 					artist: files[i].artist ? files[i].artist : artist, 
 					name: files[i].dname ? files[i].dname : files[i].fname,
-					albumArtwork: albumArtUrl
+					albumArtwork: albumArtUrl,
+					length: durationNice 
 				});
 			}
 		}
@@ -771,6 +786,32 @@ let AlexandriaCore = (function(){
 		let indexToGrab = splitFilename.length - 1;
 
 		return splitFilename[indexToGrab];
+	}
+
+	Core.util.formatDuration = function(intDuration){
+		if (!intDuration || isNaN(intDuration))
+			return "";
+
+		var sec_num = parseInt(intDuration, 10); // don't forget the second param
+		var hours   = Math.floor(sec_num / 3600);
+		var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+		var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+		if (minutes < 10) {
+			if (hours !== 0)
+				minutes = "0"+minutes;
+		}
+		if (seconds < 10) {
+			if (minutes !== 0)
+				seconds = "0"+seconds;
+		}
+
+		if (hours === 0)
+			var time = minutes+':'+seconds;
+		else
+			var time = hours+':'+minutes+':'+seconds;
+
+		return time;
 	}
 
 	Core.util.decodeMakeJSONSafe = function(stringToCheck){

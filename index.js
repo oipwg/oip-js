@@ -754,6 +754,30 @@ let AlexandriaCore = (function(){
 		Core.User.Password = "";
 	}
 
+	Core.User.FollowPublisher = function(publisher){
+		
+	}
+
+	Core.User.UnfollowPublisher = function(publisher){
+		
+	}
+
+	Core.User.LikeArtifact = function(oip){
+		
+	}
+
+	Core.User.NeturalArtifact = function(oip){
+		
+	}
+
+	Core.User.DislikeArtifact = function(oip){
+		
+	}
+
+	Core.User.UpdateArtifactView = function(oip, last_action, current_duration){
+
+	}
+
 	Core.util = {};
 
 	Core.util.chunksToFileURL = function(chunks, onLoad){

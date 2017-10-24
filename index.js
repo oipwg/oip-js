@@ -631,7 +631,7 @@ let AlexandriaCore = (function(){
 		if (!hash || hash === "")
 			return;
 
-		//onData(Core.util.buildIPFSURL(hash));
+		let returned = false;
 
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {
@@ -648,6 +648,7 @@ let AlexandriaCore = (function(){
 
 						// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
 						Core.util.chunksToFileURL(chunks, function(data){
+							returned = true;
 							onData(data);
 						})
 					});
@@ -660,7 +661,14 @@ let AlexandriaCore = (function(){
 			})
 		} catch (e){ 
 			onData(Core.util.buildIPFSURL(hash));
+			returned = true;
 		}
+
+		setTimeout(function(){
+			if (!returned){
+				onData(Core.util.buildIPFSURL(hash));
+			}
+		}, 2 * 1000)
 	}
 
 	Core.Network.getFileFromIPFS = function(hash, onComplete){

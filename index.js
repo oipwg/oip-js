@@ -594,8 +594,20 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Index.search = function(searchFor, callback){
+		let res = {
+			artifacts: [],
+			publishers: []
+		}
 		Core.Network.searchOIPd("media", "*", searchFor, true, function(results){
-			callback(Core.Index.stripUnsupported(results));
+			res.artifacts = Core.Index.stripUnsupported(results);
+
+			callback(res);
+			//console.log(results);
+		})
+		Core.Network.searchOIPd("media", "publisher", searchFor, true, function(results){
+			res.publishers = results;
+
+			callback(res);
 			//console.log(results);
 		})
 	}

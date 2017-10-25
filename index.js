@@ -536,15 +536,8 @@ let AlexandriaCore = (function(){
 		let _Core = Core;
 
 		Core.Network.getArtifactsFromOIPd(function(jsonResult) { 
-			var supportedArtifacts = [];
-			for (var x = jsonResult.length -1; x >= 0; x--){
-				if (jsonResult[x]['oip-041']){
-					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-						if (!jsonResult[x]['oip-041'].artifact.info.nsfw)
-							supportedArtifacts.push(jsonResult[x]);
-					}
-				}
-			}   
+			var supportedArtifacts = Core.Index.stripUnsupported(jsonResult);
+
 			_Core.Index.supportedArtifacts = supportedArtifacts;
 			callback(_Core.Index.supportedArtifacts);
 		});
@@ -562,6 +555,21 @@ let AlexandriaCore = (function(){
 				callback(supportedArtifacts);
 			}
 		})
+	}
+
+	Core.Index.stripUnsupported = function(artifacts){
+		var supportedArtifacts = [];
+
+		for (var x = artifacts.length -1; x >= 0; x--){
+			if (artifacts[x]['oip-041']){
+				if (artifacts[x]['oip-041'].artifact.type.split('-').length === 2){
+					if (!artifacts[x]['oip-041'].artifact.info.nsfw)
+						supportedArtifacts.push(artifacts[x]);
+				}
+			}
+		}   
+
+		return supportedArtifacts;
 	}
 
 	Core.Index.getArtifactFromID = function(id, callback){
@@ -585,6 +593,17 @@ let AlexandriaCore = (function(){
 		}
 	}
 
+	Core.Index.search = function(searchFor, callback){
+		Core.Network.searchOIPd("media", "*", searchFor, true, function(results){
+			callback(Core.Index.stripUnsupported(results));
+			//console.log(results);
+		})
+	}
+
+	Core.Index.getPublisherFromID = function(id, callback){
+
+	}
+
 	Core.Network = {};
 
 	Core.Network.cachedArtifacts = [];
@@ -593,6 +612,18 @@ let AlexandriaCore = (function(){
 	Core.Network.cachedBTCPriceObj = {};
 	Core.Network.btcpriceLastUpdate = 0;
 	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+
+	Core.Network.searchOIPd = function(protocol, searchOn, searchFor, searchLike, callback){
+		let _Core = Core;
+
+		axios.post(Core.OIPdURL + "/search", {protocol: protocol, "search-on": searchOn, "search-for": searchFor, "search-like": searchLike})
+		.then(function(results){
+			if (results && results.data && results.data.status === "success" && results.data.response)
+				callback(results.data.response);
+			else
+				callback([]);
+		});
+	}
 
 	Core.Network.getArtifactsFromOIPd = function(callback){
 		// Check to see if we should update again, if not, just return the old data.
@@ -810,6 +841,9 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.util.buildIPFSShortURL = function(artifact, file){
+		if (!artifact || !file)
+			return "";
+		
 		let location = Core.Artifact.getLocation(artifact);
 		return location + "/" + file.fname;
 	}

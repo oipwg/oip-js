@@ -604,7 +604,7 @@ let AlexandriaCore = (function(){
 			callback(res);
 			//console.log(results);
 		})
-		Core.Network.searchOIPd("media", "publisher", searchFor, true, function(results){
+		Core.Network.searchOIPd("media", "publisherName", searchFor, true, function(results){
 			res.publishers = results;
 
 			callback(res);

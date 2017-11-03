@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/dloa/alexandria-core#readme",
   "dependencies": {
+    "axios": "^0.17.0",
     "ipfs": "^0.26.0"
   }
 }

@@ -2,7 +2,7 @@ import axios from 'axios';
 try {
 	var IPFS_MAIN = require('ipfs');
 } catch (e) { 
-	console.log(e);
+	//console.log(e);
 }
 
 
@@ -23,10 +23,10 @@ let AlexandriaCore = (function(){
 				Addresses: {
 					Swarm: [
 						'/ip4/163.172.37.165/tcp/4001/ipfs/QmRvfRjoCCwVLbVAiYWqJJCiQKqGqSuKckv4eDKEHZXxZu',
-						"/ip4/69.172.212.23/tcp/4001/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
-						"/ip4/69.172.212.23/tcp/4002/ws/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
-						"/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY",
-						"/ip6/2607:5300:60:3775::/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
+						// "/ip4/69.172.212.23/tcp/4001/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
+						// "/ip4/69.172.212.23/tcp/4002/ws/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
+						// "/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY",
+						// "/ip6/2607:5300:60:3775::/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
 					]
 				}
 			}
@@ -443,6 +443,15 @@ let AlexandriaCore = (function(){
 		return paid;
 	}
 
+	Core.Artifact.isFilePaid = function(file){
+		let paid = false;
+		
+		if (file.sugPlay || file.sugBuy)
+			paid = true;
+
+		return paid;
+	}
+
 	Core.Artifact.checkPaidViewFile = function(file){
 		let paid = false;
 		if (file.sugPlay)
@@ -593,22 +602,13 @@ let AlexandriaCore = (function(){
 		}
 	}
 
-	Core.Index.search = function(searchFor, callback){
-		let res = {
-			artifacts: [],
-			publishers: []
-		}
-		Core.Network.searchOIPd("media", "*", searchFor, true, function(results){
-			res.artifacts = Core.Index.stripUnsupported(results);
+	Core.Index.search = function(options, onSuccess, onError){
+		Core.Network.searchOIPd(options, function(results){
+			let res = Core.Index.stripUnsupported(results);
 
-			callback(res);
-			//console.log(results);
-		})
-		Core.Network.searchOIPd("media", "publisherName", searchFor, true, function(results){
-			res.publishers = results;
-
-			callback(res);
-			//console.log(results);
+			onSuccess(res);
+		}, function(error){
+			onError(error);
 		})
 	}
 
@@ -625,15 +625,30 @@ let AlexandriaCore = (function(){
 	Core.Network.btcpriceLastUpdate = 0;
 	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 
-	Core.Network.searchOIPd = function(protocol, searchOn, searchFor, searchLike, callback){
+	Core.Network.searchOIPd = function(options, onSuccess, onError){
+		let defaultOptions = {
+			"protocol" : "media", 
+			"search-on": "*", 
+			"search-like": true
+		}
+
+		if (!options.protocol)
+			options.protocol = defaultOptions.protocol;
+
+		if (!options["search-on"])
+			options["search-on"] = defaultOptions["search-on"];
+
+		if (!options["search-like"])
+			options["search-like"] = defaultOptions["search-like"];
+
 		let _Core = Core;
 
-		axios.post(Core.OIPdURL + "/search", {protocol: protocol, "search-on": searchOn, "search-for": searchFor, "search-like": searchLike})
+		axios.post(Core.OIPdURL + "/search", options)
 		.then(function(results){
 			if (results && results.data && results.data.status === "success" && results.data.response)
-				callback(results.data.response);
+				onSuccess(results.data.response);
 			else
-				callback([]);
+				onError(results);
 		});
 	}
 

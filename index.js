@@ -128,6 +128,16 @@ let AlexandriaCore = (function(){
 		return pubName;
 	}
 
+	Core.Artifact.getPublisher = function(oip){
+		let pubName = "";
+
+		try {
+			pubName = oip.publisher
+		} catch(e) {}
+
+		return pubName;
+	}
+
 	Core.Artifact.getArtist = function(oip){
 		let artist = "";
 		try {

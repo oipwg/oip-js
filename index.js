@@ -98,7 +98,8 @@ let AlexandriaCore = (function(){
 				files.push(tmpFiles[i])
 			}
 		} catch(e) {}
-		return files;
+
+		return [...files];
 	}
 
 	Core.Artifact.getLocation = function(oip){
@@ -512,26 +513,6 @@ let AlexandriaCore = (function(){
 
 	Core.Data = {};
 
-	Core.Data.supportedArtifacts = [];
-
-	Core.Data.getSupportedArtifacts = function(callback){
-		let _Core = Core;
-
-		Core.Network.getArtifactsFromOIPd(function(jsonResult) { 
-			var supportedArtifacts = [];
-			for (var x = jsonResult.length -1; x >= 0; x--){
-				if (jsonResult[x]['oip-041']){
-					if (jsonResult[x]['oip-041'].artifact.type.split('-').length === 2){
-						if (!jsonResult[x]['oip-041'].artifact.info.nsfw)
-							supportedArtifacts.push(jsonResult[x]);
-					}
-				}
-			}   
-			_Core.Data.supportedArtifacts = supportedArtifacts;
-			callback(_Core.Data.supportedArtifacts);
-		});
-	}
-
 	Core.Data.getBTCPrice = function(callback){
 		// Check to see if we should update again, if not, just return the old data.
 		Core.Network.getLatestBTCPrice(callback);
@@ -542,13 +523,10 @@ let AlexandriaCore = (function(){
 	Core.Index.supportedArtifacts = [];
 
 	Core.Index.getSupportedArtifacts = function(callback){
-		let _Core = Core;
-
-		Core.Network.getArtifactsFromOIPd(function(jsonResult) { 
-			var supportedArtifacts = Core.Index.stripUnsupported(jsonResult);
-
-			_Core.Index.supportedArtifacts = supportedArtifacts;
-			callback(_Core.Index.supportedArtifacts);
+		Core.Network.getArtifactsFromOIPd(function(jsonResult) {
+			let filtered = Core.Index.stripUnsupported(jsonResult);
+			console.log("Filtered: ", filtered)
+			callback([...filtered]);
 		});
 	}
 
@@ -573,33 +551,22 @@ let AlexandriaCore = (function(){
 			if (artifacts[x]['oip-041']){
 				if (artifacts[x]['oip-041'].artifact.type.split('-').length === 2){
 					if (!artifacts[x]['oip-041'].artifact.info.nsfw)
-						supportedArtifacts.push(artifacts[x]);
+						supportedArtifacts.push(JSON.parse(JSON.stringify(artifacts[x])));
 				}
 			}
 		}   
 
-		return supportedArtifacts;
+		return [...supportedArtifacts];
 	}
 
 	Core.Index.getArtifactFromID = function(id, callback){
-		let found = false;
-
-		for (var i = Core.Index.supportedArtifacts.length - 1; i >= 0; i--) {
-			if (Core.Index.supportedArtifacts[i].txid.substr(0, id.length) === id){
-				found = true;
-				callback(Core.Index.supportedArtifacts[i]);
-			}
-		}
-
-		if (!found){
-			Core.Index.getSupportedArtifacts(function(supportedArtifacts){
-				for (var i = Core.Index.supportedArtifacts.length - 1; i >= 0; i--) {
-					if (supportedArtifacts[i].txid.substr(0, id.length) === id){
-						callback(supportedArtifacts[i]);
-					}
+		Core.Index.getSupportedArtifacts(function(supportedArtifacts){
+			for (var i = 0; i < supportedArtifacts.length; i++) {
+				if (supportedArtifacts[i].txid.substr(0, id.length) === id){
+					callback([...[supportedArtifacts[i]]]);
 				}
-			})
-		}
+			}
+		})
 	}
 
 	Core.Index.search = function(options, onSuccess, onError){
@@ -653,18 +620,11 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Network.getArtifactsFromOIPd = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		if (Core.Network.artifactsLastUpdate < Date.now() - Core.Network.artifactsUpdateTimelimit){
-			let _Core = Core;
-
-			axios.get(Core.OIPdURL + "/media/get/all").then(function(results){
-				_Core.Network.cachedArtifacts = results.data;
-				_Core.Network.artifactsLastUpdate = Date.now();
-				callback(_Core.Network.cachedArtifacts);
-			});
-		} else {
-			callback(Core.Network.cachedArtifacts);
-		}
+		axios.get(Core.OIPdURL + "/media/get/all", {
+			transformResponse: [function (data) {
+				return [...data]; 
+			}], responseType: 'json'
+		}).then( function(results){ callback([...results.data]); });
 	}
 
 	Core.Network.getLatestBTCPrice = function(callback){
@@ -929,6 +889,23 @@ let AlexandriaCore = (function(){
 			tmpStr = eval(tmpStr);
 
 		return tmpStr;
+	}
+
+	Core.util.createPriceString = function(price){
+		// This function assumes the scale has already been applied, and you are passing it a float value
+		var priceStr = parseFloat(price.toFixed(3));
+
+		if (isNaN(priceStr)){
+			return 0;
+		}
+
+		let priceDecimal = priceStr - parseInt(priceStr);
+
+		if (priceDecimal.toString().length === 3){
+			priceStr = priceStr.toString() + "0";
+		}
+
+		return priceStr.toString();
 	}
 
 	Core.util.calculateBTCCost = function(usd_value, callback){

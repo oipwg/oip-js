@@ -23,9 +23,9 @@ let AlexandriaCore = (function(){
 				Addresses: {
 					Swarm: [
 						'/ip4/163.172.37.165/tcp/4001/ipfs/QmRvfRjoCCwVLbVAiYWqJJCiQKqGqSuKckv4eDKEHZXxZu',
-						// "/ip4/69.172.212.23/tcp/4001/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
+						"/ip4/69.172.212.23/tcp/4001/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
 						// "/ip4/69.172.212.23/tcp/4002/ws/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
-						// "/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY",
+						"/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
 						// "/ip6/2607:5300:60:3775::/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
 					]
 				}
@@ -659,10 +659,14 @@ let AlexandriaCore = (function(){
 		})
 	}
 
-	Core.Network.getThumbnailFromIPFS = function(hash, onData){
+	Core.Network.getThumbnailFromIPFS = function(hash, onData, onEnd){
 		// Require a hash to be passed
 		if (!hash || hash === "")
 			return;
+
+		if (!onEnd){
+			onEnd = function(){}
+		}
 
 		let returned = false;
 
@@ -686,9 +690,9 @@ let AlexandriaCore = (function(){
 						})
 					});
 					stream.on('end', function(){
-						// Core.util.chunksToFileURL(chunks, function(data){
-						// 	onData(data);
-						// })
+						Core.util.chunksToFileURL(chunks, function(data){
+							onEnd(data);
+						})
 					})
 				}
 			})
@@ -714,7 +718,7 @@ let AlexandriaCore = (function(){
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {
 				if (err){
-					console.log(err);
+					returned = true;
 					return;
 				}
 
@@ -726,7 +730,7 @@ let AlexandriaCore = (function(){
 					});
 					stream.on('end', function(){
 						Core.util.chunksToFileURL(chunks, function(data){
-							onComplete(data);
+							onComplete(data, hash);
 							returned = true;
 						})
 					})
@@ -736,7 +740,7 @@ let AlexandriaCore = (function(){
 
 		setTimeout(function(){
 			if (!returned){
-				onData(Core.util.buildIPFSURL(hash));
+				onComplete(Core.util.buildIPFSURL(hash), hash);
 			}
 		}, 2 * 1000)
 	}

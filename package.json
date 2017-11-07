@@ -1,6 +1,6 @@
 {
   "name": "alexandria-core",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "The core module of Alexandria!",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,6 @@
   "homepage": "https://github.com/dloa/alexandria-core#readme",
   "dependencies": {
     "axios": "^0.17.0",
-    "ipfs": "^0.26.0"
+    "ipfs": "git+https://github.com/ipfs/js-ipfs.git"
   }
 }

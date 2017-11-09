@@ -597,7 +597,7 @@ let AlexandriaCore = (function(){
 
 	Core.Network.cachedArtifacts = [];
 	Core.Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
-	Core.Network.artifactsUpdateTimelimit = 30 * 1000; // 30 seconds
+	Core.Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Core.Network.cachedBTCPriceObj = {};
 	Core.Network.btcpriceLastUpdate = 0;
 	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
@@ -630,11 +630,19 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Network.getArtifactsFromOIPd = function(callback){
-		axios.get(Core.OIPdURL + "/media/get/all", {
-			transformResponse: [function (data) {
-				return [...data]; 
-			}], responseType: 'json'
-		}).then( function(results){ callback([...results.data]); });
+		if ((Date.now() - Core.Network.artifactsLastUpdate) > Core.Network.artifactsUpdateTimelimit){
+			axios.get(Core.OIPdURL + "/media/get/all", {
+				transformResponse: [function (data) {
+					return [...data]; 
+				}], responseType: 'json'
+			}).then( function(results){ 
+				Core.Network.cachedArtifacts = results.data;
+				Core.Network.artifactsLastUpdate = Date.now();
+				callback(Core.Network.cachedArtifacts);
+			 });
+		} else {
+			callback(Core.Network.cachedArtifacts);
+		}
 	}
 
 	Core.Network.getLatestBTCPrice = function(callback){
@@ -660,28 +668,48 @@ let AlexandriaCore = (function(){
 	}
 
 	Core.Network.getThumbnailFromIPFS = function(hash, onData, onEnd){
+		let returned = false;
+		let cancelRequest = false;
+
+		let cancelRequestFunc = function(){
+			returned = true;
+			cancelRequest = true;
+		}
 		// Require a hash to be passed
-		if (!hash || hash === "")
-			return;
+		if (!hash || hash === ""){
+			returned = true;
+			return cancelRequestFunc;
+		}
 
 		if (!onEnd){
 			onEnd = function(){}
 		}
 
-		let returned = false;
-
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {
 				if (err){
 					returned = true;
-					return;
+					return cancelRequestFunc;
 				}
 
 				let stream = file;
+
+				if (cancelRequest){
+					try {
+						stream.destroy();
+					} catch(e){}
+					return;
+				}
+
 				let chunks = [];
 				let lastdata = 0;
 				if (stream){
 					stream.on('data', function(chunk) {
+						// If the request was aborted, ABORT ABORT ABORT!
+						if (cancelRequest){
+							return;
+						}
+
 						chunks.push(chunk);
 
 						// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
@@ -694,6 +722,9 @@ let AlexandriaCore = (function(){
 						}
 					});
 					stream.on('end', function(){
+						if (cancelRequest)
+							return;
+
 						Core.util.chunksToFileURL(chunks, function(data){
 							onData(data, hash);
 						})
@@ -701,15 +732,23 @@ let AlexandriaCore = (function(){
 				}
 			})
 		} catch (e){ 
+			if (cancelRequest)
+				return;
+
 			onData(Core.util.buildIPFSURL(hash), hash);
 			returned = true;
 		}
 
 		setTimeout(function(){
+			if (cancelRequest)
+				return;
+
 			if (!returned){
 				onData(Core.util.buildIPFSURL(hash), hash);
 			}
 		}, 2 * 1000)
+
+		return cancelRequestFunc;
 	}
 
 	Core.Network.getFileFromIPFS = function(hash, onComplete){

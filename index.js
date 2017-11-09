@@ -2,7 +2,7 @@ import axios from 'axios';
 try {
 	var IPFS_MAIN = require('ipfs');
 } catch (e) { 
-	//console.log(e);
+	console.log(e);
 }
 
 
@@ -46,7 +46,7 @@ let AlexandriaCore = (function(){
 
 	Core.Artifact = {};
 
-	Core.Artifact.maxThumbnailSize = 512000;
+	Core.Artifact.maxThumbnailSize = 5 * 512000;
 
 	Core.Artifact.getTXID = function(oip){
 		let txid = "";
@@ -733,7 +733,7 @@ let AlexandriaCore = (function(){
 			})
 		} catch (e){ 
 			if (cancelRequest)
-				return;
+				return cancelRequestFunc;
 
 			onData(Core.util.buildIPFSURL(hash), hash);
 			returned = true;
@@ -741,7 +741,7 @@ let AlexandriaCore = (function(){
 
 		setTimeout(function(){
 			if (cancelRequest)
-				return;
+				return cancelRequestFunc;
 
 			if (!returned){
 				onData(Core.util.buildIPFSURL(hash), hash);

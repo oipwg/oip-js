@@ -673,37 +673,41 @@ let AlexandriaCore = (function(){
 		try {
 			Core.ipfs.files.cat(hash, function (err, file) {
 				if (err){
-					console.log(err);
+					returned = true;
 					return;
 				}
 
 				let stream = file;
 				let chunks = [];
+				let lastdata = 0;
 				if (stream){
 					stream.on('data', function(chunk) {
 						chunks.push(chunk);
 
 						// Note, this might cause tons of lag depending on how many ongoing IPFS requests we have.
-						Core.util.chunksToFileURL(chunks, function(data){
-							returned = true;
-							onData(data);
-						})
+						if (Date.now() - lastdata > 1000){
+							lastdata = Date.now();
+							Core.util.chunksToFileURL(chunks, function(data){
+								onData(data, hash);
+								returned = true;
+							})
+						}
 					});
 					stream.on('end', function(){
 						Core.util.chunksToFileURL(chunks, function(data){
-							onEnd(data);
+							onData(data, hash);
 						})
 					})
 				}
 			})
 		} catch (e){ 
-			onData(Core.util.buildIPFSURL(hash));
+			onData(Core.util.buildIPFSURL(hash), hash);
 			returned = true;
 		}
 
 		setTimeout(function(){
 			if (!returned){
-				onData(Core.util.buildIPFSURL(hash));
+				onData(Core.util.buildIPFSURL(hash), hash);
 			}
 		}, 2 * 1000)
 	}

@@ -202,7 +202,7 @@ let AlexandriaCore = (function(){
 				duration = files[i].duration;
 		}
 
-		return Core.util.formatDuration(duration);
+		return duration;
 	}
 
 	Core.Artifact.getMainPaidFile = function(oip, type){
@@ -273,14 +273,14 @@ let AlexandriaCore = (function(){
 		let location = Core.Artifact.getLocation(oip);
 
 		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
+			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && !files[i].disPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
 				thumbnail = files[i];
 			}
 		}
 
 		if (!thumbnail){
 			for (let i = 0; i < files.length; i++){
-				if (files[i].type === "Image" && !files[i].sugPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
+				if (files[i].type === "Image" && !files[i].sugPlay && !files[i].disPlay && files[i].fsize < Core.Artifact.maxThumbnailSize && !thumbnail){
 					thumbnail = files[i];
 				}
 			}

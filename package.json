@@ -23,6 +23,6 @@
     "aep": "git+https://github.com/bitspill/aep.git",
     "axios": "^0.17.0",
     "eventemitter3": "^2.0.3",
-    "ipfs": "git+https://github.com/ipfs/js-ipfs.git",
+    "ipfs": "git+https://github.com/ipfs/js-ipfs.git"
   }
 }

@@ -1,10 +1,13 @@
 import axios from 'axios';
+import EventEmitter from 'eventemitter3';
+
+import { Wallet } from 'aep';
+
 try {
 	var IPFS_MAIN = require('ipfs');
 } catch (e) { 
 	console.log(e);
 }
-
 
 let AlexandriaCore = (function(){
 	let Core = {};
@@ -43,6 +46,11 @@ let AlexandriaCore = (function(){
 
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
+	Core.floTickerURL = "https://api.alexandria.io/flo-market-data/v1/getAll"
+
+	Core.getEventEmitter = function(){
+		return CoreEvents;
+	}
 
 	Core.Artifact = {};
 
@@ -491,6 +499,19 @@ let AlexandriaCore = (function(){
 		}
 	}
 
+	Core.Artifact.getPaymentAddresses = function(oip, file){
+		let addrs = [];
+
+		try {
+			addrs = oip['oip-041'].artifact.payment.addresses;
+
+			if (addrs.length === 0)
+				addrs = Core.Artifact.getPublisher(oip);
+		} catch (e) {}
+
+		return addrs;
+	}
+
 	Core.Comments = {};
 
 	Core.Comments.get = function(hash, callback){
@@ -528,6 +549,19 @@ let AlexandriaCore = (function(){
 		Core.Network.getLatestBTCPrice(callback);
 	}
 
+	Core.Data.getFLOPrice = function(callback){
+		// Check to see if we should update again, if not, just return the old data.
+		Core.Network.getLatestFLOPrice(callback);
+	}
+
+	Core.Events = {};
+
+	Core.Events.emitter = new EventEmitter();
+
+	Core.Events.on = function(eventType, runMe){
+		Core.Events.emitter.on(eventType, runMe);
+	}
+
 	Core.Index = {};
 
 	Core.Index.supportedArtifacts = [];
@@ -535,7 +569,6 @@ let AlexandriaCore = (function(){
 	Core.Index.getSupportedArtifacts = function(callback){
 		Core.Network.getArtifactsFromOIPd(function(jsonResult) {
 			let filtered = Core.Index.stripUnsupported(jsonResult);
-			console.log("Filtered: ", filtered)
 			callback([...filtered]);
 		});
 	}
@@ -589,8 +622,19 @@ let AlexandriaCore = (function(){
 		})
 	}
 
-	Core.Index.getPublisherFromID = function(id, callback){
+	Core.Index.getPublisher = function(id, onSuccess, onError){
+		Core.Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
+			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
+		}, function(err){
+			onError(err);
+		});
+	}
 
+	Core.Index.getRandomSuggested = function(onSuccess){
+		Core.Index.getSupportedArtifacts(function(results){
+			let randomArt = results.sort( function() { return 0.5 - Math.random() } ).slice(0,15);
+			onSuccess(randomArt);
+		});
 	}
 
 	Core.Network = {};
@@ -599,8 +643,11 @@ let AlexandriaCore = (function(){
 	Core.Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
 	Core.Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Core.Network.cachedBTCPriceObj = {};
+	Core.Network.cachedFLOPriceObj = {};
 	Core.Network.btcpriceLastUpdate = 0;
+	Core.Network.flopriceLastUpdate = 0;
 	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+	Core.Network.flopriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 
 	Core.Network.searchOIPd = function(options, onSuccess, onError){
 		let defaultOptions = {
@@ -615,15 +662,19 @@ let AlexandriaCore = (function(){
 		if (!options["search-on"])
 			options["search-on"] = defaultOptions["search-on"];
 
-		if (!options["search-like"])
-			options["search-like"] = defaultOptions["search-like"];
+		if (!options["search-like"]){
+			if (options.protocol === "publisher" && options["search-on"] === "address")
+				options["search-like"] = false;
+			else
+				options["search-like"] = defaultOptions["search-like"];
+		}
 
 		let _Core = Core;
 
 		axios.post(Core.OIPdURL + "/search", options)
 		.then(function(results){
 			if (results && results.data && results.data.status === "success" && results.data.response)
-				onSuccess(results.data.response);
+				onSuccess([...results.data.response]);
 			else
 				onError(results);
 		});
@@ -658,6 +709,22 @@ let AlexandriaCore = (function(){
 			});
 		} else {
 			callback(Core.Network.cachedBTCPriceObj["USD"].last);
+		}
+	}
+
+	Core.Network.getLatestFLOPrice = function(callback){
+		if (Core.Network.flopriceLastUpdate < Date.now() - Core.Network.flopriceUpdateTimelimit || Core.Network.cachedFLOPriceObj === {}){
+			let _Core = Core;
+
+			axios.get(Core.floTickerURL).then(function(result){
+				if (result.status === 200){
+					_Core.Network.cachedFLOPriceObj = result.data;
+					_Core.Network.flopriceLastUpdate = Date.now();
+					callback(_Core.Network.cachedFLOPriceObj["USD"]);
+				}
+			});
+		} else {
+			callback(Core.Network.cachedFLOPriceObj["USD"]);
 		}
 	}
 
@@ -834,14 +901,43 @@ let AlexandriaCore = (function(){
 	Core.User.Identifier = "";
 	Core.User.Password = "";
 
-	Core.User.Login = function(identifier, password){
-		Core.User.Identifier = identifier;
-		Core.User.Password = password;
+	Core.User.Login = function(identifier, password, onSuccess, onError){
+		if (!onSuccess)
+			onSuccess = function(){};
+		if (!onError)
+			onError = function(){};
+
+		Core.Wallet.Login(identifier, password, (state) => {
+			// If we have florincoin addresses
+			if (state.florincoin){
+				if (state.florincoin.addresses){
+					let gotFirstPublisher = false;
+
+					for (var i = 0; i < state.florincoin.addresses.length; i++) {
+						Core.Index.getPublisher(state.florincoin.addresses[i].address, (pubInfo) => {
+							if (!gotFirstPublisher){
+								gotFirstPublisher = true;
+								onSuccess(pubInfo)
+							}
+						}, (error) => {
+							// Address is not a publisher
+						})
+					}
+				}
+			}
+			//onSuccess(state);
+		}, (error) => {
+			// On Error
+			console.error(error);
+			onError(error);
+		})
 	}
 
 	Core.User.Logout = function(){
 		Core.User.Identifier = "";
 		Core.User.Password = "";
+
+		Core.Wallet.wallet = {};
 	}
 
 	Core.User.FollowPublisher = function(publisher){
@@ -866,6 +962,79 @@ let AlexandriaCore = (function(){
 
 	Core.User.UpdateArtifactView = function(oip, last_action, current_duration){
 
+	}
+
+	Core.Wallet = {};
+
+	Core.Wallet.wallet; 
+
+	Core.Wallet.Login = function(identifier, password, onSuccess, onError){
+		Core.Wallet.wallet = new Wallet(identifier, password);
+
+		Core.Wallet.wallet.load().then(() => {
+		    return Core.Wallet.wallet.refresh().then((keys) => {
+			    	let state = Core.Wallet.keysToState(keys[0]);
+			    	Core.Events.emitter.emit("wallet-bal-update", state);
+					onSuccess(state)
+				}).catch((error) => {
+					onError(error);
+				})
+			}).catch((error) => {
+			onError(error);
+		})
+	}
+
+	Core.Wallet.sendPayment = function(fiat, amount, payTo, onSuccess, onError){
+		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
+		console.log(fiat, amount, payTo, Core.Wallet.wallet.listAddresses("florincoin"));
+
+		Core.Data.getFLOPrice(function(usd_flo){
+			console.log(Core.Wallet.wallet);
+			console.log(Core.Wallet.wallet.listAddresses("florincoin")[0], payTo, (usd_flo * amount).toFixed(8));
+			
+			let paymentAmount = (usd_flo * amount).toFixed(8);
+
+			if (parseFloat(paymentAmount < 0.001))
+				paymentAmount = 0.001;
+
+			Core.Wallet.wallet.payTo(Core.Wallet.wallet.listAddresses("florincoin")[0], payTo, paymentAmount, 0.01, "Hello from oip-mw :)", function(error, success){
+				if (error){
+					console.error(error);
+					onError(error);
+				} else {
+					console.log(success);
+					onSuccess(success);
+				}
+			});
+		})
+	}
+
+	Core.Wallet.keysToState = function(keys){
+		let state = {};
+		for (var j in keys){
+			for (var i in keys[j]){
+				let coinName = keys[j][i].coinName;
+
+				if (!state[coinName]){
+					state[coinName] = {
+						balance: 0,
+						usd: 0,
+						addresses: []
+					};
+				}
+
+				if (keys[j] && keys[j][i] && keys[j][i].res && keys[j][i].res.balance){
+					state[coinName].balance += keys[j][i].res.balance;
+
+					state[coinName].addresses.push({
+						address: keys[j][i].res.addrStr,
+						balance: keys[j][i].res.balance
+					})
+				}
+			}
+		}
+
+		return state;
 	}
 
 	Core.util = {};

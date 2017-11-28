@@ -18,8 +18,8 @@ let AlexandriaCore = (function(){
 			init: true,
 			start: true,
 			EXPERMENTAL: {
-				pubsub: true,
-				sharding: true,
+				pubsub: false,
+				sharding: false,
 				dht: true
 			},
 			config: {
@@ -28,8 +28,8 @@ let AlexandriaCore = (function(){
 						'/ip4/163.172.37.165/tcp/4001/ipfs/QmRvfRjoCCwVLbVAiYWqJJCiQKqGqSuKckv4eDKEHZXxZu',
 						"/ip4/69.172.212.23/tcp/4001/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
 						// "/ip4/69.172.212.23/tcp/4002/ws/ipfs/QmXUcnxbsDkazGNvgf1kQya6YwVqNsLbVhzg3LHNTteqwz",
-						"/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
-						// "/ip6/2607:5300:60:3775::/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
+						"/ip4/192.99.6.117/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY",
+						"/ip6/2607:5300:60:3775::/tcp/4001/ipfs/QmQ85u4dH4EPRpNxLxBMvUCHCUyuyZgBZsfW81rzh51FtY"
 					]
 				}
 			}
@@ -47,6 +47,7 @@ let AlexandriaCore = (function(){
 	// Define URLS for things we don't control, these likely will change often
 	Core.btcTickerURL = "https://blockchain.info/ticker?cors=true";
 	Core.floTickerURL = "https://api.alexandria.io/flo-market-data/v1/getAll"
+	Core.ltcTickerURL = "https://api.coinmarketcap.com/v1/ticker/litecoin/"
 
 	Core.getEventEmitter = function(){
 		return CoreEvents;
@@ -54,7 +55,7 @@ let AlexandriaCore = (function(){
 
 	Core.Artifact = {};
 
-	Core.Artifact.maxThumbnailSize = 5 * 512000;
+	Core.Artifact.maxThumbnailSize = 512000;
 
 	Core.Artifact.getTXID = function(oip){
 		let txid = "";
@@ -554,6 +555,11 @@ let AlexandriaCore = (function(){
 		Core.Network.getLatestFLOPrice(callback);
 	}
 
+	Core.Data.getLTCPrice = function(callback){
+		// Check to see if we should update again, if not, just return the old data.
+		Core.Network.getLatestLTCPrice(callback);
+	}
+
 	Core.Events = {};
 
 	Core.Events.emitter = new EventEmitter();
@@ -644,10 +650,13 @@ let AlexandriaCore = (function(){
 	Core.Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Core.Network.cachedBTCPriceObj = {};
 	Core.Network.cachedFLOPriceObj = {};
+	Core.Network.cachedLTCPriceObj = {};
 	Core.Network.btcpriceLastUpdate = 0;
 	Core.Network.flopriceLastUpdate = 0;
+	Core.Network.ltcpriceLastUpdate = 0;
 	Core.Network.btcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Core.Network.flopriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+	Core.Network.ltcpriceUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 
 	Core.Network.searchOIPd = function(options, onSuccess, onError){
 		let defaultOptions = {
@@ -728,6 +737,22 @@ let AlexandriaCore = (function(){
 		}
 	}
 
+	Core.Network.getLatestLTCPrice = function(callback){
+		if (Core.Network.ltcpriceLastUpdate < Date.now() - Core.Network.ltcpriceUpdateTimelimit || Core.Network.cachedLTCPriceObj === {}){
+			let _Core = Core;
+
+			axios.get(Core.ltcTickerURL).then(function(result){
+				if (result.status === 200){
+					_Core.Network.cachedLTCPriceObj = result.data;
+					_Core.Network.ltcpriceLastUpdate = Date.now();
+					callback(_Core.Network.cachedLTCPriceObj[0]["price_usd"]);
+				}
+			});
+		} else {
+			callback(Core.Network.cachedLTCPriceObj[0]["price_usd"]);
+		}
+	}
+
 	Core.Network.getIPFS = function(callback){
 		Core.ipfs.on('ready', () => {
 			callback(Core.ipfs);
@@ -753,7 +778,7 @@ let AlexandriaCore = (function(){
 		}
 
 		try {
-			Core.ipfs.files.cat(hash, function (err, file) {
+			Core.ipfs.files.catReadableStream(hash, function (err, file) {
 				if (err){
 					returned = true;
 					return cancelRequestFunc;
@@ -907,7 +932,10 @@ let AlexandriaCore = (function(){
 		if (!onError)
 			onError = function(){};
 
+		console.log("hellow");
+
 		Core.Wallet.Login(identifier, password, (state) => {
+			console.log("success");
 			// If we have florincoin addresses
 			if (state.florincoin){
 				if (state.florincoin.addresses){
@@ -967,6 +995,7 @@ let AlexandriaCore = (function(){
 	Core.Wallet = {};
 
 	Core.Wallet.wallet; 
+	Core.Wallet.devMode = false;
 
 	Core.Wallet.Login = function(identifier, password, onSuccess, onError){
 		Core.Wallet.wallet = new Wallet(identifier, password);
@@ -974,6 +1003,7 @@ let AlexandriaCore = (function(){
 		Core.Wallet.wallet.load().then(() => {
 		    return Core.Wallet.wallet.refresh().then((keys) => {
 			    	let state = Core.Wallet.keysToState(keys[0]);
+
 			    	Core.Events.emitter.emit("wallet-bal-update", state);
 					onSuccess(state)
 				}).catch((error) => {
@@ -984,28 +1014,45 @@ let AlexandriaCore = (function(){
 		})
 	}
 
+	Core.Wallet.refresh = function(){
+		Core.Wallet.wallet.refresh().then((keys) => {
+			let state = Core.Wallet.keysToState(keys[0]);
+
+	    	Core.Events.emitter.emit("wallet-bal-update", state);
+		})
+	}
+
 	Core.Wallet.sendPayment = function(fiat, amount, payTo, onSuccess, onError){
 		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
-		console.log(fiat, amount, payTo, Core.Wallet.wallet.listAddresses("florincoin"));
+		console.log(fiat, amount, payTo, "florincoin");
 
 		Core.Data.getFLOPrice(function(usd_flo){
 			console.log(Core.Wallet.wallet);
-			console.log(Core.Wallet.wallet.listAddresses("florincoin")[0], payTo, (usd_flo * amount).toFixed(8));
 			
-			let paymentAmount = (usd_flo * amount).toFixed(8);
+			let paymentAmount = (amount / usd_flo).toFixed(8);
+			console.log(paymentAmount)
 
-			if (parseFloat(paymentAmount < 0.001))
-				paymentAmount = 0.001;
+			if (parseFloat(paymentAmount) <= 0.001)
+				paymentAmount = 0.00100001;
 
-			Core.Wallet.wallet.payTo(Core.Wallet.wallet.listAddresses("florincoin")[0], payTo, paymentAmount, 0.01, "Hello from oip-mw :)", function(error, success){
-				if (error){
-					console.error(error);
-					onError(error);
-				} else {
-					console.log(success);
-					onSuccess(success);
-				}
-			});
+			console.log("From: florincoin\nTo: " + payTo + "\nAmount:" + paymentAmount);
+
+			if (Core.Wallet.devMode){
+				setTimeout(function(){ onSuccess({"txid": "no-tx-sent___dev-mode"})}, 1500);
+			} else {
+				Core.Wallet.wallet.payTo("florincoin", payTo, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
+					if (error){
+						console.error(error);
+						onError(error);
+					} else {
+						console.log(success);
+						onSuccess(success);
+
+						Core.Wallet.refresh();
+						Core.Wallet.wallet.store();
+					}
+				});
+			}
 		})
 	}
 

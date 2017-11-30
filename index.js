@@ -921,10 +921,20 @@ let AlexandriaCore = (function(){
 		});
 	}
 
+	Core.Publisher = {};
+
+	Core.Publisher.Register = function(username, onSuccess, onError){
+
+	}
+
 	Core.User = {};
 
 	Core.User.Identifier = "";
 	Core.User.Password = "";
+
+	Core.User.Register = function(email, password, onSuccess, onError){
+
+	}
 
 	Core.User.Login = function(identifier, password, onSuccess, onError){
 		if (!onSuccess)
@@ -997,6 +1007,10 @@ let AlexandriaCore = (function(){
 	Core.Wallet.wallet; 
 	Core.Wallet.devMode = false;
 
+	Core.Wallet.Create = function(email, password, onSuccess, onError){
+
+	}
+
 	Core.Wallet.Login = function(identifier, password, onSuccess, onError){
 		Core.Wallet.wallet = new Wallet(identifier, password);
 
@@ -1013,6 +1027,10 @@ let AlexandriaCore = (function(){
 			}).catch((error) => {
 			onError(error);
 		})
+	}
+
+	Core.Wallet.RequestFaucet = function(){
+		
 	}
 
 	Core.Wallet.refresh = function(){

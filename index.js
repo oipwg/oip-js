@@ -507,7 +507,7 @@ let AlexandriaCore = (function(){
 			addrs = oip['oip-041'].artifact.payment.addresses;
 
 			if (addrs.length === 0)
-				addrs = Core.Artifact.getPublisher(oip);
+				addrs = {'florincoin': Core.Artifact.getPublisher(oip)};
 		} catch (e) {}
 
 		return addrs;
@@ -1002,7 +1002,8 @@ let AlexandriaCore = (function(){
 
 		Core.Wallet.wallet.load().then(() => {
 		    return Core.Wallet.wallet.refresh().then((keys) => {
-			    	let state = Core.Wallet.keysToState(keys[0]);
+		    		let json = Core.Wallet.wallet.toJSON();
+			    	let state = Core.Wallet.keysToState(keys[0], json);
 
 			    	Core.Events.emitter.emit("wallet-bal-update", state);
 					onSuccess(state)
@@ -1016,7 +1017,8 @@ let AlexandriaCore = (function(){
 
 	Core.Wallet.refresh = function(){
 		Core.Wallet.wallet.refresh().then((keys) => {
-			let state = Core.Wallet.keysToState(keys[0]);
+			let json = Core.Wallet.wallet.toJSON();
+			let state = Core.Wallet.keysToState(keys[0], json);
 
 	    	Core.Events.emitter.emit("wallet-bal-update", state);
 		})
@@ -1040,7 +1042,13 @@ let AlexandriaCore = (function(){
 			if (Core.Wallet.devMode){
 				setTimeout(function(){ onSuccess({"txid": "no-tx-sent___dev-mode"})}, 1500);
 			} else {
-				Core.Wallet.wallet.payTo("florincoin", payTo, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
+				var paymentAddress = payTo;
+
+				if (payTo.florincoin)
+					paymentAddress = payTo.florincoin;
+
+				Core.Wallet.wallet.payTo("florincoin", paymentAddress, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
+					console.log(success,error)
 					if (error){
 						console.error(error);
 						onError(error);
@@ -1056,7 +1064,7 @@ let AlexandriaCore = (function(){
 		})
 	}
 
-	Core.Wallet.keysToState = function(keys){
+	Core.Wallet.keysToState = function(keys, jsonState){
 		let state = {};
 		for (var j in keys){
 			for (var i in keys[j]){
@@ -1078,6 +1086,19 @@ let AlexandriaCore = (function(){
 						balance: keys[j][i].res.balance
 					})
 				}
+			}
+		}
+		for (var i in jsonState.keys){
+			for (var j in jsonState.keys[i].coins){
+				let matched = false;
+				for (var q in state[j].addresses){
+					if (state[j].addresses[q].address === jsonState.keys[i].coins[j].address){
+						matched = true;
+						state[j].addresses[q].privKey = jsonState.keys[i].coins[j].privKey;
+					}
+				}
+				if (!matched)
+					state[j].addresses.push({ address: jsonState.keys[i].coins[j].address, balance: 0, privKey: jsonState.keys[i].coins[j].privKey})
 			}
 		}
 

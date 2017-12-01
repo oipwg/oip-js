@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import * as aep from 'aep';
+import aep from 'aep';
 
 var WalletFunction = function(){
 	var Data = this.Data;
@@ -94,25 +94,28 @@ var WalletFunction = function(){
 
 	Wallet.keysToState = function(keys, jsonState){
 		let state = {};
+		console.log(keys, jsonState);
 		for (var j in keys){
 			for (var i in keys[j]){
-				let coinName = keys[j][i].coinName;
+				if (keys[j][i].state === "fulfilled"){
+					let coinName = keys[j][i].value.coinName;
 
-				if (!state[coinName]){
-					state[coinName] = {
-						balance: 0,
-						usd: 0,
-						addresses: []
-					};
-				}
+					if (!state[coinName]){
+						state[coinName] = {
+							balance: 0,
+							usd: 0,
+							addresses: []
+						};
+					}
 
-				if (keys[j] && keys[j][i] && keys[j][i].res && keys[j][i].res.balance){
-					state[coinName].balance += keys[j][i].res.balance;
+					if (keys[j] && keys[j][i] && keys[j][i].value && keys[j][i].value.res && keys[j][i].value.res.balance){
+						state[coinName].balance += keys[j][i].value.res.balance;
 
-					state[coinName].addresses.push({
-						address: keys[j][i].res.addrStr,
-						balance: keys[j][i].res.balance
-					})
+						state[coinName].addresses.push({
+							address: keys[j][i].value.res.addrStr,
+							balance: keys[j][i].value.res.balance
+						})
+					}
 				}
 			}
 		}

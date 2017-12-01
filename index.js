@@ -9,8 +9,8 @@ import Wallet from './src/Wallet.js';
 import util from './src/util.js';
 import settings from './src/settings.js';
 
-let AlexandriaCore = (function(){
-	let Core = {};
+var AlexandriaCore = function(){
+	var Core = {};
 
 	Core.settings = settings.bind(Core)();
 
@@ -33,6 +33,6 @@ let AlexandriaCore = (function(){
 	Core.Comments = Comments.bind(Core)();
 
 	return Core;
-})();
+};
 
-export default AlexandriaCore;
+export default AlexandriaCore();

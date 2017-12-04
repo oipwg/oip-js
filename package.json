@@ -1,14 +1,14 @@
 {
-  "name": "alexandria-core",
+  "name": "oip-js",
   "version": "1.0.10",
-  "description": "The core module of Alexandria!",
+  "description": "The core module of OIP written in Javascript!",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dloa/alexandria-core.git"
+    "url": "git+https://github.com/oipwg/oip-js.git"
   },
   "keywords": [
     "oip"
@@ -16,9 +16,9 @@
   "author": "Skylar Ostler <sky@alexandria.io>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dloa/alexandria-core/issues"
+    "url": "https://github.com/oipwg/oip-js/issues"
   },
-  "homepage": "https://github.com/dloa/alexandria-core#readme",
+  "homepage": "https://github.com/oipwg/oip-js#readme",
   "dependencies": {
     "aep": "git+https://github.com/bitspill/aep.git",
     "axios": "^0.17.0",

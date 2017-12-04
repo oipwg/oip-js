@@ -290,6 +290,15 @@ var NetworkFunction = function(){
 		});
 	}
 
+	Network.tryFaucet = function(address, recaptcha){
+		var data = {
+			flo_address: address,
+			recaptcha: recaptcha
+		}
+
+		// axios.post()
+	}
+
 	this.Network = Network;
 	return this.Network;
 }

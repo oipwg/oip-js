@@ -18,7 +18,12 @@ var WalletFunction = function(){
 	}
 
 	Wallet.Create = function(email, password, onSuccess, onError){
-
+		aep.createNewWallet({
+			email: email,
+			password: password
+		}).then((wallet) => {
+			console.log(wallet);
+		}).catch(onError);
 	}
 
 	Wallet.Login = function(identifier, password, onSuccess, onError){
@@ -39,8 +44,8 @@ var WalletFunction = function(){
 		})
 	}
 
-	Wallet.RequestFaucet = function(){
-
+	Wallet.tryFaucet = function(onSuccess, onError){
+		Network.tryFaucet(flo_address, recaptcha, onSuccess, onError)
 	}
 
 	Wallet.refresh = function(){

@@ -8,7 +8,9 @@ var UserFunction = function(){
 	User.Password = "";
 
 	User.Register = function(email, password, onSuccess, onError){
-
+		Wallet.Create(email, password, function(wallet){
+			onSuccess(wallet.identifier);
+		}, onError);
 	}
 
 	User.Login = function(identifier, password, onSuccess, onError){
@@ -16,8 +18,6 @@ var UserFunction = function(){
 			onSuccess = function(){};
 		if (!onError)
 			onError = function(){};
-
-		console.log(Wallet);
 
 		Wallet.Login(identifier, password, (state) => {
 			// If we have florincoin addresses

@@ -261,7 +261,7 @@ var NetworkFunction = function(){
 	Network.postCommentToISSO = function(uri, comment, callback){
 		var instance = axios.create();
 
-		instance.post(settings.issoURL + "new?uri=" + encodeURIComponent(uri), comment, {headers: {"Content-Type": "application/json"}, transformRequest: [(data, headers) => {
+		instance.post(settings.issoURL + "new?uri=" + encodeURIComponent(uri), JSON.stringify(comment), {headers: {"Content-Type": "application/json"}, transformRequest: [(data, headers) => {
 		    delete headers.common.Authorization
 		    return data }]
 		}).then(function(results){

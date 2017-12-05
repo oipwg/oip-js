@@ -57,14 +57,19 @@ var WalletFunction = function(){
 		})
 	}
 
-	Wallet.sendPayment = function(fiat, amount, payTo, onSuccess, onError){
+	Wallet.sendPayment = function(coin, fiat, fiat_amount, payTo, onSuccess, onError){
 		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
-		console.log(fiat, amount, payTo, "florincoin");
+		console.log(coin, fiat, fiat_amount, payTo);
+
+		if (coin !== "florincoin"){
+			console.error("Attempting to send currency with " + coin + " will not calculte the correct USD value!!!");
+			return;
+		}
 
 		Data.getFLOPrice(function(usd_flo){
 			console.log(Wallet.wallet);
 			
-			let paymentAmount = (amount / usd_flo).toFixed(8);
+			let paymentAmount = (fiat_amount / usd_flo).toFixed(8);
 			console.log(paymentAmount)
 
 			if (parseFloat(paymentAmount) <= 0.001)
@@ -75,12 +80,7 @@ var WalletFunction = function(){
 			if (Wallet.devMode){
 				setTimeout(function(){ onSuccess({"txid": "no-tx-sent___dev-mode"})}, 1500);
 			} else {
-				var paymentAddress = payTo;
-
-				if (payTo.florincoin)
-					paymentAddress = payTo.florincoin;
-
-				Wallet.wallet.payTo("florincoin", paymentAddress, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
+				Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
 					console.log(success,error)
 					if (error){
 						console.error(error);

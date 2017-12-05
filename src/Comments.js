@@ -4,14 +4,14 @@ var CommentsFunction = function(){
 	var Comments = {};
 
 	Comments.get = function(hash, callback){
-		Network.getCommentsFromISSO("/browser/" + hash, function(results){
+		Network.getCommentsFromISSO("/" + hash.substring(0,6), function(results){
 			console.log(results);
 			callback(results);
 		})
 	}
 
 	Comments.add = function(hash, comment, callback){
-		Network.postCommentToISSO("/browser/" + hash, {text: comment}, function(results){
+		Network.postCommentToISSO("/" + hash.substring(0,6), {text: comment}, function(results){
 			console.log(results)
 			callback(results);
 		})

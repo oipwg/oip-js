@@ -250,7 +250,7 @@ var NetworkFunction = function(){
 	}
 
 	Network.getCommentsFromISSO = function(uri, callback){
-		axios.get(settings.issoURL + "?uri=" + encodeURIComponent(uri)).then(function(results){
+		axios.get(settings.issoURL + "?uri=" + encodeURIComponent(uri) + "&plain=1").then(function(results){
 			callback(results);
 		}).catch(function (error) {
 			// If there is an error, it is likely because the artifact has no comments, just return an empty array.
@@ -261,7 +261,7 @@ var NetworkFunction = function(){
 	Network.postCommentToISSO = function(uri, comment, callback){
 		var instance = axios.create();
 
-		instance.post(settings.issoURL + "new?uri=" + encodeURIComponent(uri), JSON.stringify({title: "", text: comment}), {headers: {"Content-Type": "application/json"}, transformRequest: [(data, headers) => {
+		instance.post(settings.issoURL + "new?uri=" + encodeURIComponent(uri) + "&plain=1", JSON.stringify({title: "", text: comment}), {headers: {"Content-Type": "application/json"}, transformRequest: [(data, headers) => {
 		    delete headers.common.Authorization
 		    return data }]
 		}).then(function(results){

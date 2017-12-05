@@ -11,7 +11,7 @@ var CommentsFunction = function(){
 	}
 
 	Comments.add = function(hash, comment, callback){
-		Network.postCommentToISSO("/" + hash.substring(0,6), {text: comment}, function(results){
+		Network.postCommentToISSO("/" + hash.substring(0,6), comment, function(results){
 			console.log(results)
 			callback(results);
 		})

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import qs from 'qs';
 
 try {
 	var IPFS_MAIN = require('ipfs');
@@ -290,13 +291,32 @@ var NetworkFunction = function(){
 		});
 	}
 
-	Network.tryFaucet = function(address, recaptcha){
+	Network.tryFaucet = function(address, recaptcha, onSuccess, onError){
 		var data = {
-			flo_address: address,
-			recaptcha: recaptcha
+			"flo_address": address,
+			"recaptcha": recaptcha
 		}
 
-		// axios.post()
+		axios.post(settings.faucetURL, qs.stringify(data)).then(function(response){
+			console.log(response);
+			var res = response.data;
+
+			if (res.success){
+				var txid = res.txid;
+				var inf = res['tx-info'].replace(/u'/g, "'").replace(/'/g, '"').replace(/Decimal\(\"/g, '').replace(/\"\)/g, '');
+				var txinfo = JSON.parse(inf);
+				var tmpVout = 1;
+				for (var i = 0; i < txinfo.vout.length; i++){
+					if (txinfo.vout[i].value == 1)
+						tmpVout = txinfo.vout[i].n;
+				}
+				onSuccess(res, txinfo);
+			} else {
+				onError(res, response);
+			}
+		}).catch(function(error){
+			console.error(error)
+		})
 	}
 
 	this.Network = Network;

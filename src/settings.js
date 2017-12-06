@@ -6,6 +6,7 @@ var settingsFunction = function(){
 		btcTickerURL: "https://blockchain.info/ticker?cors=true",
 		floTickerURL: "https://api.alexandria.io/flo-market-data/v1/getAll",
 		ltcTickerURL: "https://api.coinmarketcap.com/v1/ticker/litecoin/",
+		faucetURL: "https://api.alexandria.io/tradebot/faucet",
 		ipfsConfig: {
 			init: true,
 			start: true,

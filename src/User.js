@@ -9,7 +9,7 @@ var UserFunction = function(){
 
 	User.Register = function(email, password, onSuccess, onError){
 		Wallet.Create(email, password, function(wallet){
-			onSuccess(wallet.identifier);
+			onSuccess(wallet);
 		}, onError);
 	}
 
@@ -34,6 +34,10 @@ var UserFunction = function(){
 						}, (error) => {
 							// Address is not a publisher
 						})
+					}
+
+					if (!gotFirstPublisher){
+						onSuccess({name: "User"});
 					}
 				}
 			}

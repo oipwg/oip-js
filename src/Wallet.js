@@ -3,6 +3,7 @@ import aep from 'aep';
 
 var WalletFunction = function(){
 	var Data = this.Data;
+	var Network = this.Network;
 
 	var Wallet = {}
 
@@ -22,7 +23,9 @@ var WalletFunction = function(){
 			email: email,
 			password: password
 		}).then((wallet) => {
-			console.log(wallet);
+			Wallet.wallet = wallet;
+			onSuccess(Wallet.wallet);
+			Wallet.wallet.refresh();
 		}).catch(onError);
 	}
 
@@ -44,8 +47,29 @@ var WalletFunction = function(){
 		})
 	}
 
-	Wallet.tryFaucet = function(onSuccess, onError){
-		Network.tryFaucet(flo_address, recaptcha, onSuccess, onError)
+	Wallet.tryFaucet = function(flo_address, recaptcha, onSuccess, onError){
+		Network.tryFaucet(flo_address, recaptcha, function(res, txinfo){
+			for (var key in Wallet.wallet.keys){
+				if (Wallet.wallet.keys[key].coins.florincoin){
+					for (var i in txinfo.vout){
+						for (var j in txinfo.vout[i].scriptPubKey.addresses){
+							if (txinfo.vout[i].scriptPubKey.addresses[j] === Wallet.wallet.keys[key].coins.florincoin.address){
+								var txid = txinfo.txid;
+								var vout = txinfo.vout[i].n;
+								var amount = txinfo.vout[i].value;
+								var satoshi = amount * Wallet.wallet.keys[key].coins.florincoin.coinInfo.satPerCoin;
+								var inputs = [];
+
+								Wallet.wallet.keys[key].coins.florincoin.addUnconfirmed(txid, vout, amount, satoshi, inputs);
+								Wallet.refresh();
+
+								onSuccess(res,txinfo);
+							}
+						}
+					} 
+				}
+			}
+		}, onError)
 	}
 
 	Wallet.refresh = function(){

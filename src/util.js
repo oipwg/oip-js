@@ -74,8 +74,11 @@ var utilFunction = function(){
 
 	util.decodeMakeJSONSafe = function(stringToCheck){
 		let tmpStr = stringToCheck;
-		if (typeof tmpStr === "string" && tmpStr.substr(0,1) === '"' && tmpStr.substr(tmpStr.length-1,tmpStr.length) === '"')
-			tmpStr = eval(tmpStr);
+		if (typeof tmpStr === "string" && tmpStr.substr(0,1) === '"' && tmpStr.substr(tmpStr.length-1,tmpStr.length) === '"'){
+			try {
+				tmpStr = eval(tmpStr);
+			} catch(e) {}
+		}
 
 		return tmpStr;
 	}

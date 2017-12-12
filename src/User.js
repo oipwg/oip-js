@@ -20,28 +20,23 @@ var UserFunction = function(){
 			onError = function(){};
 
 		Wallet.Login(identifier, password, (state) => {
+			console.log(state);
 			// If we have florincoin addresses
 			if (state.florincoin){
-				if (state.florincoin.addresses){
-					let gotFirstPublisher = false;
-
-					for (var i = 0; i < state.florincoin.addresses.length; i++) {
-						Index.getPublisher(state.florincoin.addresses[i].address, (pubInfo) => {
-							if (!gotFirstPublisher){
-								gotFirstPublisher = true;
-								onSuccess(pubInfo)
-							}
-						}, (error) => {
-							// Address is not a publisher
-						})
-					}
-
-					if (!gotFirstPublisher){
+				if (state.florincoin.mainAddress){
+					
+					Index.getPublisher(state.florincoin.mainAddress, (pubInfo) => {
+						onSuccess(pubInfo)
+					}, (error) => {
+						// Address is not a publisher
 						onSuccess({name: "User"});
-					}
+					})
+				} else {
+					onSuccess({name: "User"});
 				}
+			} else {
+				onSuccess({name: "User"});
 			}
-			//onSuccess(state);
 		}, (error) => {
 			// On Error
 			console.error(error);

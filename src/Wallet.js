@@ -85,14 +85,13 @@ var WalletFunction = function(){
 	}
 
 	Wallet.refresh = function(onSuccess, onError){
-		if (typeof onSuccess !== "function")
+		if (!onSuccess)
 			onSuccess = function(){}
-		if (typeof onError !== "function")
+		if (!onError)
 			onError = function(){}
 
 		Wallet.wallet.refresh().then((keys) => {
-			let json = Wallet.wallet.toJSON();
-			let state = Wallet.keysToState(keys[0], json);
+			let state = Wallet.createState();
 
 	    	Wallet.emitter.emit("bal-update", state);
 
@@ -142,70 +141,25 @@ var WalletFunction = function(){
 		})
 	}
 
-	Wallet.keysToState = function(keys, jsonState){
+	Wallet.createState = function(){
 		let state = {};
-		console.log(keys, jsonState);
-		
-		for (var j in keys){
-			let coinName = keys[j].value.coinName;
 
-			if (keys[j].state === "fulfilled"){
-				if (!state[coinName]){
-					state[coinName] = {
-						status: "online",
-						balance: 0,
-						usd: 0,
-						addresses: [],
-						utxo: []
-					};
-				}
+		let supportedCoins = oipmw.Networks.listSupportedCoins();
 
-				if (keys[j] && keys[j].value && keys[j].value.utxo){
-					state[coinName].utxo = keys[j].value.utxo;
-				}
-			} else {
-				if (!state[coinName]){
-					state[coinName] = {
-						status: "offline",
-						balance: 0,
-						usd: 0,
-						addresses: [],
-						utxo: []
-					};
-				}
+		for (var coin in supportedCoins){
+			state[supportedCoins[coin]] = {
+				mainAddress: Wallet.wallet.getMainAddress(supportedCoins[coin]),
+				balance: Wallet.wallet.getBalance(supportedCoins[coin]),
+				usd: 0,
+				transactions: []
 			}
-		}
-		for (var i in jsonState.keys){
-			for (var j in jsonState.keys[i].coins){
-				let matched = false;
-				if (state[j] && state[j].addresses){
-					for (var q in state[j].addresses){
-						if (state[j].addresses[q].address === jsonState.keys[i].coins[j].address){
-							matched = true;
-							state[j].addresses[q].privKey = jsonState.keys[i].coins[j].privKey;
-						}
-					}
-				} else {
-					if (!state[j]){
-						state[j] = {
-							balance: 0,
-							usd: 0,
-							addresses: []
-						};
-					} else if (!state[j].addresses){
-						state[j].addresses = [];
-					}
+
+			for (var key in Wallet.wallet.keys){
+				var transactions = []; //Wallet.wallet.keys[key].getTransactions(coin);
+
+				for (var i = 0; i < transactions.length; i++) {
+					state[supportedCoins[coin]].transactions.push(transactions[i]);
 				}
-				if (!matched)
-					state[j].addresses.push({ address: jsonState.keys[i].coins[j].address, balance: jsonState.keys[i].getBalance(j), privKey: jsonState.keys[i].coins[j].privKey})
-			}
-		}
-
-		for (var coin in state){
-			state[coin].balance = 0;
-
-			for (var address in state[coin].addresses){
-				state[coin].balance += state[coin].addresses[address].balance;
 			}
 		}
 

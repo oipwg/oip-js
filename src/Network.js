@@ -291,29 +291,48 @@ var NetworkFunction = function(){
 		});
 	}
 
-	Network.tryFaucet = function(address, recaptcha, onSuccess, onError){
+	Network.tryOneTimeFaucet = function (address, recaptcha, onSuccess, onError) {
+		Network.tryFaucet("one_time", address, recaptcha, onSuccess, onError);
+	}
+
+	Network.tryDailyFaucet = function (address, recaptcha, onSuccess, onError) {
+		Network.tryFaucet("interval", address, recaptcha, onSuccess, onError);
+	}
+
+	Network.tryFaucet = function(type, address, recaptcha, onSuccess, onError){
 		var data = {
-			"flo_address": address,
-			"recaptcha": recaptcha
+			"currency_code": "FLO",
+			"depositAddress": address,
+			"recaptcha2": recaptcha,
+			"type": type
 		}
 
-		axios.post(settings.faucetURL, qs.stringify(data)).then(function(response){
+		axios.post(settings.faucetURL + "/request", qs.stringify(data)).then(function(response){
 			console.log(response);
 			var res = response.data;
 
 			if (res.success){
-				var txid = res.txid;
-				var inf = res['tx-info'].replace(/u'/g, "'").replace(/'/g, '"').replace(/Decimal\(\"/g, '').replace(/\"\)/g, '');
-				var txinfo = JSON.parse(inf);
-				var tmpVout = 1;
-				for (var i = 0; i < txinfo.vout.length; i++){
-					if (txinfo.vout[i].value == 1)
-						tmpVout = txinfo.vout[i].n;
-				}
-				onSuccess(res, txinfo);
+				var txinfo = res.info;
+
+				onSuccess(txinfo);
 			} else {
 				onError(res, response);
 			}
+		}).catch(function(error){
+			console.error(error)
+		})
+	}
+
+	Network.checkDailyFaucet = function(onSuccess, onError){
+		var data = {
+			"currency_code": "FLO"
+		}
+
+		axios.post(settings.faucetURL + "/check", qs.stringify(data)).then(function(response){
+			console.log(response);
+			var res = response.data;
+
+			onSuccess(res);
 		}).catch(function(error){
 			console.error(error)
 		})

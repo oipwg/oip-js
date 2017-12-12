@@ -47,29 +47,48 @@ var WalletFunction = function(){
 		})
 	}
 
-	Wallet.tryFaucet = function(flo_address, recaptcha, onSuccess, onError){
-		Network.tryFaucet(flo_address, recaptcha, function(res, txinfo){
-			for (var key in Wallet.wallet.keys){
-				if (Wallet.wallet.keys[key].coins.florincoin){
-					for (var i in txinfo.vout){
-						for (var j in txinfo.vout[i].scriptPubKey.addresses){
-							if (txinfo.vout[i].scriptPubKey.addresses[j] === Wallet.wallet.keys[key].coins.florincoin.address){
-								var txid = txinfo.txid;
-								var vout = txinfo.vout[i].n;
-								var amount = txinfo.vout[i].value;
-								var satoshi = amount * Wallet.wallet.keys[key].coins.florincoin.coinInfo.satPerCoin;
-								var inputs = [];
+	Wallet.getMainAddress = function(coin){
+		if (Wallet.wallet){
+			return Wallet.wallet.getMainAddress(coin);
+		} else {
+			return '';
+		}
+	}
 
-								Wallet.wallet.keys[key].coins.florincoin.addUnconfirmed(txid, vout, amount, satoshi, inputs);
-								Wallet.refresh();
+	Wallet.tryOneTimeFaucet = function(flo_address, recaptcha, onSuccess, onError){
+		Network.tryOneTimeFaucet(flo_address, recaptcha, function(txinfo){
+			Wallet.tryAddUnconfirmed(flo_address, txinfo, onSuccess, onError);
+		}, onError);
+	}
 
-								onSuccess(res,txinfo);
-							}
+	Wallet.tryDailyFaucet = function(flo_address, recaptcha, onSuccess, onError){
+		Network.tryDailyFaucet(flo_address, recaptcha, function(txinfo){
+			Wallet.tryAddUnconfirmed(flo_address, txinfo, onSuccess, onError);
+		}, onError);
+	}
+
+	Wallet.tryAddUnconfirmed = function(flo_address, txinfo, onSuccess, onError){
+		for (var key in Wallet.wallet.keys){
+			if (Wallet.wallet.keys[key].coins.florincoin){
+				for (var i in txinfo.vout){
+					for (var j in txinfo.vout[i].scriptPubKey.addresses){
+						if (txinfo.vout[i].scriptPubKey.addresses[j] === Wallet.wallet.keys[key].coins.florincoin.address){
+							var txid = txinfo.txid;
+							var vout = txinfo.vout[i].n;
+							var amount = txinfo.vout[i].value;
+							var satoshi = amount * Wallet.wallet.keys[key].coins.florincoin.coinInfo.satPerCoin;
+							var inputs = [];
+
+							Wallet.wallet.keys[key].coins.florincoin.addUnconfirmed(txid, vout, amount, satoshi, inputs);
+							Wallet.wallet.store();
+							Wallet.refresh();
+
+							onSuccess(txinfo);
 						}
-					} 
-				}
+					}
+				} 
 			}
-		}, onError)
+		}
 	}
 
 	Wallet.refresh = function(){

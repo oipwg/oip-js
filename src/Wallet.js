@@ -1,5 +1,5 @@
 import EventEmitter from 'eventemitter3';
-import aep from 'aep';
+import oipmw from 'oipmw';
 
 var WalletFunction = function(){
 	var Data = this.Data;
@@ -19,7 +19,7 @@ var WalletFunction = function(){
 	}
 
 	Wallet.Create = function(email, password, onSuccess, onError){
-		aep.createNewWallet({
+		oipmw.createNewWallet({
 			email: email,
 			password: password
 		}).then((wallet) => {
@@ -30,21 +30,14 @@ var WalletFunction = function(){
 	}
 
 	Wallet.Login = function(identifier, password, onSuccess, onError){
-		Wallet.wallet = new aep.Wallet(identifier, password);
+		Wallet.wallet = new oipmw.Wallet(identifier, password);
 
 		Wallet.wallet.load().then(() => {
-		    return Wallet.wallet.refresh().then((keys) => {
-		    		let json = Wallet.wallet.toJSON();
-			    	let state = Wallet.keysToState(keys[0], json);
-
-			    	Wallet.emitter.emit("bal-update", state);
-					onSuccess(state)
-				}).catch((error) => {
-					onError(error);
-				})
-			}).catch((error) => {
-			onError(error);
-		})
+		   		Wallet.refresh(onSuccess, onError);
+		   	}).catch((error) => {
+				onError(error);
+			}
+		)
 	}
 
 	Wallet.getMainAddress = function(coin){
@@ -91,12 +84,21 @@ var WalletFunction = function(){
 		}
 	}
 
-	Wallet.refresh = function(){
+	Wallet.refresh = function(onSuccess, onError){
+		if (typeof onSuccess !== "function")
+			onSuccess = function(){}
+		if (typeof onError !== "function")
+			onError = function(){}
+
 		Wallet.wallet.refresh().then((keys) => {
 			let json = Wallet.wallet.toJSON();
 			let state = Wallet.keysToState(keys[0], json);
 
 	    	Wallet.emitter.emit("bal-update", state);
+
+	    	onSuccess(state);
+		}).catch((error) => {
+			onError(error);
 		})
 	}
 
@@ -143,43 +145,71 @@ var WalletFunction = function(){
 	Wallet.keysToState = function(keys, jsonState){
 		let state = {};
 		console.log(keys, jsonState);
+		
 		for (var j in keys){
-			for (var i in keys[j]){
-				if (keys[j][i].state === "fulfilled"){
-					let coinName = keys[j][i].value.coinName;
+			let coinName = keys[j].value.coinName;
 
-					if (!state[coinName]){
-						state[coinName] = {
-							balance: 0,
-							usd: 0,
-							addresses: []
-						};
-					}
+			if (keys[j].state === "fulfilled"){
+				if (!state[coinName]){
+					state[coinName] = {
+						status: "online",
+						balance: 0,
+						usd: 0,
+						addresses: [],
+						utxo: []
+					};
+				}
 
-					if (keys[j] && keys[j][i] && keys[j][i].value && keys[j][i].value.res && keys[j][i].value.res.balance){
-						state[coinName].balance += keys[j][i].value.res.balance;
-
-						state[coinName].addresses.push({
-							address: keys[j][i].value.res.addrStr,
-							balance: keys[j][i].value.res.balance
-						})
-					}
+				if (keys[j] && keys[j].value && keys[j].value.utxo){
+					state[coinName].utxo = keys[j].value.utxo;
+				}
+			} else {
+				if (!state[coinName]){
+					state[coinName] = {
+						status: "offline",
+						balance: 0,
+						usd: 0,
+						addresses: [],
+						utxo: []
+					};
 				}
 			}
 		}
 		for (var i in jsonState.keys){
 			for (var j in jsonState.keys[i].coins){
 				let matched = false;
-				for (var q in state[j].addresses){
-					if (state[j].addresses[q].address === jsonState.keys[i].coins[j].address){
-						matched = true;
-						state[j].addresses[q].privKey = jsonState.keys[i].coins[j].privKey;
+				if (state[j] && state[j].addresses){
+					for (var q in state[j].addresses){
+						if (state[j].addresses[q].address === jsonState.keys[i].coins[j].address){
+							matched = true;
+							state[j].addresses[q].privKey = jsonState.keys[i].coins[j].privKey;
+						}
+					}
+				} else {
+					if (!state[j]){
+						state[j] = {
+							balance: 0,
+							usd: 0,
+							addresses: []
+						};
+					} else if (!state[j].addresses){
+						state[j].addresses = [];
 					}
 				}
 				if (!matched)
-					state[j].addresses.push({ address: jsonState.keys[i].coins[j].address, balance: 0, privKey: jsonState.keys[i].coins[j].privKey})
+					state[j].addresses.push({ address: jsonState.keys[i].coins[j].address, balance: jsonState.keys[i].getBalance(j), privKey: jsonState.keys[i].coins[j].privKey})
 			}
 		}
+
+		for (var coin in state){
+			state[coin].balance = 0;
+
+			for (var address in state[coin].addresses){
+				state[coin].balance += state[coin].addresses[address].balance;
+			}
+		}
+
+		console.log("Created State!", state);
 
 		return state;
 	}

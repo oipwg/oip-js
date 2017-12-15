@@ -4,11 +4,14 @@ var UserFunction = function(){
 
 	var User = {};
 
+	User.isLoggedIn = false;
+	User.isPublisher = false;
 	User.Identifier = "";
 	User.Password = "";
 
 	User.Register = function(email, password, onSuccess, onError){
 		Wallet.Create(email, password, function(wallet){
+			User.isLoggedIn = true;
 			onSuccess(wallet);
 		}, onError);
 	}
@@ -20,12 +23,14 @@ var UserFunction = function(){
 			onError = function(){};
 
 		Wallet.Login(identifier, password, (state) => {
+			User.isLoggedIn = true;
 			console.log(state);
 			// If we have florincoin addresses
 			if (state.florincoin){
 				if (state.florincoin.mainAddress){
 					
 					Index.getPublisher(state.florincoin.mainAddress, (pubInfo) => {
+						User.isPublisher = true;
 						onSuccess(pubInfo)
 					}, (error) => {
 						// Address is not a publisher
@@ -47,6 +52,8 @@ var UserFunction = function(){
 	User.Logout = function(){
 		User.Identifier = "";
 		User.Password = "";
+		User.isLoggedIn = false;
+		User.isPublisher = false;
 
 		Wallet.logout();
 	}

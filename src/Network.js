@@ -323,9 +323,10 @@ var NetworkFunction = function(){
 		})
 	}
 
-	Network.checkDailyFaucet = function(onSuccess, onError){
+	Network.checkDailyFaucet = function(flo_address, onSuccess, onError){
 		var data = {
-			"currency_code": "FLO"
+			"currency_code": "FLO",
+			"depositAddress": flo_address
 		}
 
 		axios.post(settings.faucetURL + "/check", qs.stringify(data)).then(function(response){

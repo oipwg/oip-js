@@ -3,6 +3,36 @@ var DataFunction = function(){
 
 	var Data = {};
 
+	Data.getExchangeRate = function(coin, fiat, callback){
+		if (coin === fiat){
+			return callback(1);
+		}
+
+		var exchangeTypes = {
+			usd: {
+				bitcoin: {
+					getExchangeRate: Data.getBTCPrice
+				},
+				litecoin: {
+					getExchangeRate: Data.getLTCPrice
+				},
+				florincoin: {
+					getExchangeRate: Data.getFLOPrice
+				}
+			}
+		}
+
+		for (var fiat_type in exchangeTypes){
+			if (fiat_type === fiat){
+				for (var coin_type in exchangeTypes[fiat_type]){
+					if (coin_type === coin){
+						exchangeTypes[fiat_type][coin_type].getExchangeRate(callback)
+					}
+				}
+			}
+		}
+	}
+
 	Data.getBTCPrice = function(callback){
 		// Check to see if we should update again, if not, just return the old data.
 		Network.getLatestBTCPrice(callback);

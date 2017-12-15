@@ -61,6 +61,16 @@ var IndexFunction = function(){
 	}
 
 	Index.getPublisher = function(id, onSuccess, onError){
+		if (localStorage.registeredPublishers){
+			var pubs = JSON.parse(localStorage.registeredPublishers).arr;
+
+			for (var pub of pubs){
+				if (pub.address === id){
+					onSuccess(pub);
+					return;
+				}
+			}
+		}
 		Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
 			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
 		}, function(err){

@@ -23,9 +23,7 @@ var WalletFunction = function(){
 			email: email,
 			password: password
 		}).then((wallet) => {
-			Wallet.wallet = wallet;
-			onSuccess(Wallet.wallet);
-			Wallet.wallet.refresh();
+			Wallet.Login(email, password, onSuccess, onError);
 		}).catch(onError);
 	}
 
@@ -48,15 +46,39 @@ var WalletFunction = function(){
 		}
 	}
 
+	Wallet.checkDailyFaucet = function(flo_address, onSuccess, onError){
+		Network.checkDailyFaucet(flo_address, (res) => {
+			if (res.status === "ALREADY_RECEIVED_INTERVAL_FOR_NOW"){
+				onSuccess(false);
+			} else {
+				onSuccess(true);
+			}
+		}, (error) => {
+			onError(error);
+		});
+	}
+
 	Wallet.tryOneTimeFaucet = function(flo_address, recaptcha, onSuccess, onError){
 		Network.tryOneTimeFaucet(flo_address, recaptcha, function(txinfo){
-			Wallet.tryAddUnconfirmed(flo_address, txinfo, onSuccess, onError);
+			Wallet.wallet.addUnconfirmedRawTransaction(txinfo);
+			Wallet.createAndEmitState(function(success){
+				Wallet.wallet.store();
+				onSuccess();
+			}, function(error){
+				onSuccess();
+			})
 		}, onError);
 	}
 
 	Wallet.tryDailyFaucet = function(flo_address, recaptcha, onSuccess, onError){
 		Network.tryDailyFaucet(flo_address, recaptcha, function(txinfo){
-			Wallet.tryAddUnconfirmed(flo_address, txinfo, onSuccess, onError);
+			Wallet.wallet.addUnconfirmedRawTransaction(txinfo);
+			Wallet.createAndEmitState(function(success){
+				Wallet.wallet.store();
+				onSuccess();
+			}, function(error){
+				onSuccess();
+			})
 		}, onError);
 	}
 
@@ -84,6 +106,31 @@ var WalletFunction = function(){
 		}
 	}
 
+	Wallet.createAndEmitState = function(onSuccess, onError){
+		if (!onSuccess)
+			onSuccess = function(){}
+		if (!onError)
+			onError = function(){}
+
+		try {
+			let state = Wallet.createState();
+
+			// Custom wipe out stxo ;)
+			// Wallet.wallet.keys[0].coins.florincoin.stxo = [];
+			// Wallet.wallet.store();
+
+	    	Wallet.emitter.emit("bal-update", state);
+
+	    	onSuccess(state);
+		} catch (e) {
+			onError(e);
+		}
+	}
+
+	Wallet.signMessage = function(address, message){
+		return Wallet.wallet.signMessage(address, message)
+	}
+
 	Wallet.refresh = function(onSuccess, onError){
 		if (!onSuccess)
 			onSuccess = function(){}
@@ -91,13 +138,27 @@ var WalletFunction = function(){
 			onError = function(){}
 
 		Wallet.wallet.refresh().then((keys) => {
-			let state = Wallet.createState();
-
-	    	Wallet.emitter.emit("bal-update", state);
-
-	    	onSuccess(state);
+			Wallet.createAndEmitState(onSuccess, onError);
 		}).catch((error) => {
 			onError(error);
+		})
+	}
+
+	Wallet.sendTxComment = function(options, onSuccess, onError){
+		var pubAddress = Wallet.wallet.getMainAddress('florincoin');
+		Wallet.wallet.payTo(pubAddress, pubAddress, 0.001, options, function(error, success){
+			console.log(success, error)
+			if (error){
+				console.error(error);
+				onError(error);
+			} else {
+				Wallet.wallet.store();
+				Wallet.createAndEmitState(() => {
+					Wallet.refresh();
+				});
+				
+				onSuccess(success);
+			}
 		})
 	}
 
@@ -105,60 +166,76 @@ var WalletFunction = function(){
 		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
 		console.log(coin, fiat, fiat_amount, payTo);
 
+
+
 		if (coin !== "florincoin"){
 			console.error("Attempting to send currency with " + coin + " will not calculte the correct USD value!!!");
 			return;
 		}
 
-		Data.getFLOPrice(function(usd_flo){
-			console.log(Wallet.wallet);
-			
-			let paymentAmount = (fiat_amount / usd_flo).toFixed(8);
-			console.log(paymentAmount)
+		Data.getExchangeRate(coin, fiat, function(fiatPerCoin){
+			var paymentAmount = (fiat_amount / fiatPerCoin).toFixed(8);
 
-			if (parseFloat(paymentAmount) <= 0.001)
-				paymentAmount = 0.00100001;
+			console.log("From: " + coin + "\nTo: " + payTo + "\nAmount:" + paymentAmount + "\nFiat:" + fiat + " (" + fiat_amount + ")");
 
-			console.log("From: florincoin\nTo: " + payTo + "\nAmount:" + paymentAmount);
+			var options = {
+				//"txComment": "Hello from oip-mw :)"
+			};
 
-			if (Wallet.devMode){
-				setTimeout(function(){ onSuccess({"txid": "no-tx-sent___dev-mode"})}, 1500);
-			} else {
-				Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), 0.001, "Hello from oip-mw :)", function(error, success){
-					console.log(success,error)
-					if (error){
-						console.error(error);
-						onError(error);
-					} else {
-						console.log(success);
-						onSuccess(success);
-
+			Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), options, function(error, success){
+				console.log(success,error)
+				if (error){
+					console.error(error);
+					onError(error);
+				} else {
+					Wallet.wallet.store();
+					Wallet.createAndEmitState(() => {
 						Wallet.refresh();
-						Wallet.wallet.store();
-					}
-				});
-			}
+					});
+					
+					onSuccess(success);
+				}
+			});
 		})
 	}
 
 	Wallet.createState = function(){
-		let state = {};
+		var state = {};
 
-		let supportedCoins = oipmw.Networks.listSupportedCoins();
+		var supportedCoins = oipmw.Networks.listSupportedCoins();
 
 		for (var coin in supportedCoins){
 			state[supportedCoins[coin]] = {
 				mainAddress: Wallet.wallet.getMainAddress(supportedCoins[coin]),
+				mainPrivate: Wallet.wallet.getPrivateKey(Wallet.wallet.getMainAddress(supportedCoins[coin])),
 				balance: Wallet.wallet.getBalance(supportedCoins[coin]),
 				usd: 0,
-				transactions: []
+				transactions: {
+					queued: [],
+					unconfirmed: [],
+					confirmed: { txs: [] }
+				}
 			}
 
 			for (var key in Wallet.wallet.keys){
-				var transactions = []; //Wallet.wallet.keys[key].getTransactions(coin);
+				var transactions = {
+					queued: [],
+					unconfirmed: [],
+					confirmed: { txs: [] }
+				};
 
-				for (var i = 0; i < transactions.length; i++) {
-					state[supportedCoins[coin]].transactions.push(transactions[i]);
+				try {
+					transactions = Wallet.wallet.keys[key].getTransactionsHistory(supportedCoins[coin]);
+				} catch (e) {}
+
+				for (var i = 0; i < transactions.queued.length; i++) {
+					state[supportedCoins[coin]].transactions.queued.push(transactions.queued[i]);
+				}
+				// for (var i = 0; i < transactions.unconfirmed.length; i++) {
+				// 	state[supportedCoins[coin]].transactions.unconfirmed.push(transactions.unconfirmed[i]);
+				// }
+				for (var i = 0; i < transactions.confirmed.txs.length; i++) {
+					state[supportedCoins[coin]].transactions.confirmed.txs.push(transactions.confirmed.txs[i]);
 				}
 			}
 		}
@@ -166,6 +243,18 @@ var WalletFunction = function(){
 		console.log("Created State!", state);
 
 		return state;
+	}
+
+	Wallet.validateAddress = function(address, coin){
+		var network = oipmw.Networks.getNetwork(coin);
+
+		var validAddress = oipmw.util.validation.isValidAddress(address, network);
+
+		if (!validAddress){
+			return false
+		} else {
+			return true
+		}
 	}
 
 	this.Wallet = Wallet;

@@ -1,36 +1,30 @@
 var PublisherFunction = function(){
+	var OIPd = this.OIPd;
+	var User = this.User;
 	var Publisher = {};
 
-	Publisher.Register = function(username, onSuccess, onError){
-		LibraryDJS.announcePublisher(PhoenixAPI.wallet, username, address, "", email, function(err, data){
-			if (err){
-				PhoenixEvents.trigger("onPublisherAnnounceFail", err);
-				console.error(err);
-				return;
-			} 
+	Publisher.Register = function(username, address, email, onSuccess, onError){
+		// Set user to a publisher while we publish our registration :)
+		User.isPublisher = true;
+		OIPd.announcePublisher(username, address, email, function(publisher){
+			var registeredPublishers;
 
-			PhoenixAPI.sentPubUsers.push({
-				username: username,
-				address: address,
-				email: email
-			});
+			try {
+				registeredPublishers = JSON.parse(localStorage.registeredPublishers);
+			} catch (e) {}
 
-			localStorage.sentPubUsers = JSON.stringify(PhoenixAPI.sentPubUsers);
+			if (!registeredPublishers)
+					registeredPublishers = {arr: []};
 
-			localStorage.setItem("identifier", PhoenixAPI.wallet.identifier);
-			localStorage.setItem("loginWalletEnc", CryptoJS.AES.encrypt(password, PhoenixAPI.wallet.identifier));
-			localStorage.setItem("remember-me", "true");
+			registeredPublishers.arr.push(publisher);
 
+			localStorage.registeredPublishers = JSON.stringify(registeredPublishers);
 
-			PhoenixEvents.trigger("onPublisherAnnounceSuccess", {
-				identifier: PhoenixAPI.wallet.identifier,
-				username: username,
-				address: address,
-				email: email
-			});
-
-			// Redirect to main dashboard page.
-			//window.location.href = 'index.html';
+			onSuccess(publisher);
+		}, function(error){
+			// Return to false if error
+			User.isPublisher = false;
+			onError(error);
 		});
 	}
 

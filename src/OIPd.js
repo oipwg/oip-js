@@ -28,7 +28,7 @@ var OIPdFunction = function(){
 	};
 
 	// returns signature directly
-	OIPd.signArtifactDeactivate = function (txid, publisher, timestamp) {
+	OIPd.signArtifactDeactivation = function (txid, publisher, timestamp) {
 		// https://api.alexandria.io/docs/#sign-an-artifact-deactivation-message
 		var toSign = txid + "-" + publisher + "-" + timestamp;
 
@@ -88,10 +88,11 @@ var OIPdFunction = function(){
 	};
 
 	// callback is (errorString, response) response=https://api.alexandria.io/docs/#deactivate-an-artifact
-	OIPd.sendDeactivationMessage = function (address, txid, onSuccess, onError) {
+	OIPd.deactivateArtifact = function (txid, onSuccess, onError) {
 		var time = OIPd.unixTime();
+		var address = Wallet.getMainAddress('florincoin');
 
-		var signature = OIPd.signArtifactDeactivate(txid, address, parseInt(time));
+		var signature = OIPd.signArtifactDeactivation(txid, address, parseInt(time));
 
 		var data = {  
 		    "oip-041":{  

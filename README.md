@@ -21,7 +21,7 @@ Inside of OIP-JS there are currently 11 modules. Each of the four modules have s
 
 Currently, we have implemented or planned the following functions:
 
-* NOTE: As of 12/24/2017 this is not a full list of all functions, please be advised that this is outdated!!! *
+*** NOTE: As of 12/24/2017 this is not a full list of all functions, please be advised that this is outdated!!! ***
 
 #### `Core.Artifact`
 `Core.Artifact.getTXID(oipArtifactID)`: **return**s the *txid* of the given artifact.

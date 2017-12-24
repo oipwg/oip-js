@@ -130,7 +130,7 @@ var OIPdFunction = function(){
 		// over sized?
 		if (txComment.length > (OIPd.CHOP_MAX_LEN * 10)) {
 			callback("txComment is too large to fit within 10 multipart transactions. try making it smaller!");
-		} else 	if (txComment.length > OIPd.TXCOMMENT_MAX_LEN) {
+		} else if (txComment.length > OIPd.TXCOMMENT_MAX_LEN) {
 			OIPd.multiPart(txComment, publishFee, onSuccess, onError);
 		}
 		else {
@@ -208,6 +208,9 @@ var OIPdFunction = function(){
 				}
 			}, onError)
 		}
+
+		// Now that we have initialized, we need to call it for the first time.
+		sendNextPart();
 	}
 
 	OIPd.createMultipartStrings = function(longTxComment){

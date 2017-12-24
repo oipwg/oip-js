@@ -2,6 +2,7 @@ import jsonpatch from 'fast-json-patch';
 import MD5 from 'crypto-js/md5';
 
 var OIPdFunction = function(){
+	var Data = this.Data;
 	var Wallet = this.Wallet;
 	var User = this.User;
 	var OIPd = {}

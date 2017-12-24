@@ -83,7 +83,7 @@ var NetworkFunction = function(){
 		});
 	}
 
-	Network.getArtifactsFromOIPd = function(callback){
+	Network.getArtifactsFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.artifactsLastUpdate) > Network.artifactsUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/media/get/all", {
 				transformResponse: [function (data) {
@@ -92,55 +92,63 @@ var NetworkFunction = function(){
 			}).then( function(results){ 
 				Network.cachedArtifacts = results.data;
 				Network.artifactsLastUpdate = Date.now();
-				callback(Network.cachedArtifacts);
-			 });
+				onSuccess(Network.cachedArtifacts);
+			}).catch(function(error){
+				onError(error);
+			});
 		} else {
-			callback(Network.cachedArtifacts);
+			onSuccess(Network.cachedArtifacts);
 		}
 	}
 
-	Network.getLatestBTCPrice = function(callback){
+	Network.getLatestBTCPrice = function(onSuccess, onError){
 		if (Network.btcpriceLastUpdate < Date.now() - Network.btcpriceUpdateTimelimit || Network.cachedBTCPriceObj === {}){
 
 			axios.get(settings.btcTickerURL).then(function(result){
 				if (result.status === 200){
 					Network.cachedBTCPriceObj = result.data;
 					Network.btcpriceLastUpdate = Date.now();
-					callback(Network.cachedBTCPriceObj["USD"].last);
+					onSuccess(Network.cachedBTCPriceObj["USD"].last);
 				}
+			}).catch(function(error){
+				onError(error);
 			});
 		} else {
-			callback(Network.cachedBTCPriceObj["USD"].last);
+			onSuccess(Network.cachedBTCPriceObj["USD"].last);
 		}
 	}
 
-	Network.getLatestFLOPrice = function(callback){
+	Network.getLatestFLOPrice = function(onSuccess, onError){
 		if (Network.flopriceLastUpdate < Date.now() - Network.flopriceUpdateTimelimit || Network.cachedFLOPriceObj === {}){
 
 			axios.get(settings.floTickerURL).then(function(result){
 				if (result.status === 200){
 					Network.cachedFLOPriceObj = result.data;
 					Network.flopriceLastUpdate = Date.now();
-					callback(Network.cachedFLOPriceObj["USD"]);
+					onSuccess(Network.cachedFLOPriceObj["USD"]);
 				}
+			}).catch(function(error){
+				onError(error);
 			});
 		} else {
-			callback(Network.cachedFLOPriceObj["USD"]);
+			onSuccess(Network.cachedFLOPriceObj["USD"]);
 		}
 	}
 
-	Network.getLatestLTCPrice = function(callback){
+	Network.getLatestLTCPrice = function(onSuccess, onError){
 		if (Network.ltcpriceLastUpdate < Date.now() - Network.ltcpriceUpdateTimelimit || Network.cachedLTCPriceObj === {}){
 
 			axios.get(settings.ltcTickerURL).then(function(result){
 				if (result.status === 200){
 					Network.cachedLTCPriceObj = result.data;
 					Network.ltcpriceLastUpdate = Date.now();
-					callback(Network.cachedLTCPriceObj[0]["price_usd"]);
+					onSuccess(Network.cachedLTCPriceObj[0]["price_usd"]);
 				}
+			}).catch(function(error){
+				onError(error);
 			});
 		} else {
-			callback(Network.cachedLTCPriceObj[0]["price_usd"]);
+			onSuccess(Network.cachedLTCPriceObj[0]["price_usd"]);
 		}
 	}
 

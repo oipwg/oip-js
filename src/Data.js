@@ -3,7 +3,7 @@ var DataFunction = function(){
 
 	var Data = {};
 
-	Data.getExchangeRate = function(coin, fiat, callback){
+	Data.getExchangeRate = function(coin, fiat, onSuccess, onError){
 		if (coin === fiat){
 			return callback(1);
 		}
@@ -26,31 +26,28 @@ var DataFunction = function(){
 			if (fiat_type === fiat){
 				for (var coin_type in exchangeTypes[fiat_type]){
 					if (coin_type === coin){
-						exchangeTypes[fiat_type][coin_type].getExchangeRate(callback)
+						exchangeTypes[fiat_type][coin_type].getExchangeRate(onSuccess, onError)
 					}
 				}
 			}
 		}
 	}
 
-	Data.getBTCPrice = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		Network.getLatestBTCPrice(callback);
+	Data.getBTCPrice = function(onSuccess, onError){
+		Network.getLatestBTCPrice(onSuccess, onError);
 	}
 
-	Data.getFLOPrice = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		Network.getLatestFLOPrice(callback);
+	Data.getFLOPrice = function(onSuccess, onError){
+		Network.getLatestFLOPrice(onSuccess, onError);
 	}
 
-	Data.getLTCPrice = function(callback){
-		// Check to see if we should update again, if not, just return the old data.
-		Network.getLatestLTCPrice(callback);
+	Data.getLTCPrice = function(onSuccess, onError){
+		Network.getLatestLTCPrice(onSuccess, onError);
 	}
 
-	Data.calculateBTCCost = function(usd_value, callback){
+	Data.calculateBTCCost = function(usd_value, onSuccess, onError){
 		Data.getBTCPrice(function(btc_price){
-			callback(usd_value / btc_price)
+			onSuccess(usd_value / btc_price)
 		})
 	}
 

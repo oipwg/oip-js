@@ -1,18 +1,27 @@
-# alexandria-core
-An NPM module containing all of the core functionality to run the Alexandria front end.
+# OIP-JS
+An NPM module containing all of the core functionality to run any OIP front end.
 
 ## Work in Progress
 This section is a work in progress, so more information will be added periotically. Information may be out of data, for latest information, please read the code :)
 
 ### Modules
-Inside of Alexandria Core there are currently 4 modules. Each of the four modules have specific tasks to try and seperate the logic out. They are seperated as follows:
+Inside of OIP-JS there are currently 11 modules. Each of the four modules have specific tasks to try and seperate the logic out. They are seperated as follows:
 
 - Artifact: This contains helper functions for manipulating artifact JSON.
+- Comments: This allows the user to simply comment on Artifacts
 - Data: This contains simple access to application information that was fetched by the network layer.
+- Index: This module provides access to OIPd and pulls data directly from an external OIPd server.
 - Network: Usually called by the Data layer. This module contains all of the server calls & network transfer functions (i.e. IPFS).
+- OIPd: Provides helper functions for pushing OIPd messages to the Florincoin Blockchain.
+- Publisher: Provides helper functions for publishers (i.e. registering a publisher, logging in, etc)
+- settings: A simple helper file that allows for easy setting of application settings. This contains most of the URL's to different external services.
+- User: Create, Sign-in, Pay, etc. This module provides User functions.
 - util: Other generally helpful utility functions that we have found helpful.
+- Wallet: This module provides access to `OIPMW` and also has a few wrapper functions. Allows users to Sign messages and send funds easily (along with Login, Logout, and Wallet creation)
 
 Currently, we have implemented or planned the following functions:
+
+* NOTE: As of 12/24/2017 this is not a full list of all functions, please be advised that this is outdated!!! *
 
 #### `Core.Artifact`
 `Core.Artifact.getTXID(oipArtifactID)`: **return**s the *txid* of the given artifact.
@@ -50,11 +59,11 @@ Currently, we have implemented or planned the following functions:
 `Core.Artifact.paid(oipArtifactID)`: **return**s `true` if any files have either a suggested buy price or suggested play price. Otherwise it will return `false`.
 
 #### `Core.Index`
-`Core.Index.getSupportedArtifacts(callback(supportedArtifacts))`: Provides an array of supported artifacts to the callback. All artifacts will be formatted based on the highest version supported by `alexandria-core`. Currently this is `oip-041`.
+`Core.Index.getSupportedArtifacts(callback(supportedArtifacts))`: Provides an array of supported artifacts to the callback. All artifacts will be formatted based on the highest version supported by `oip-js`. Currently this is `oip-041`.
 
 `Core.Index.getLatestArtifacts(callback(latestArtifacts))`: This will grab the latest artifacts from OIPd and **return** them as a JSON array to the callback.
 
-`Core.Index.getRegisteredPublishers(callback(registeredPublishers))`: Provides an array of registered publishers to the callback. All publishers will be formatted based on the highest version supported by *alexandria-core*, currently this is oip-041. paginated, sortable by various fields
+`Core.Index.getRegisteredPublishers(callback(registeredPublishers))`: Provides an array of registered publishers to the callback. All publishers will be formatted based on the highest version supported by *oip-js*, currently this is oip-041. paginated, sortable by various fields
 
 `Core.Index.getPublisherDetail(oipPublisherAddress)`: **return**s *Publisher Alias*, *BTC Address*, TXID of registration message, registration *timestamp*, and *email md5 hash* for given Publisher Address.
 

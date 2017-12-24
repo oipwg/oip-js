@@ -27,5 +27,10 @@
     "ipfs": "git+https://github.com/ipfs/js-ipfs.git",
     "oipmw": "git+https://github.com/oipwg/oipmw.git",
     "qs": "^6.5.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babelify": "^8.0.0"
   }
 }

@@ -54,14 +54,15 @@ var OIPdFunction = function(){
 
 	// response=http://api.alexandria.io/#publish-new-artifact
 	OIPd.publishArtifact = function (ipfs, address, artifactJSON, onSuccess, onError) {
-		var data = OIPd.signPublishArtifact(ipfs, address, artifactJSON)
+		var signedArtJSON = OIPd.signPublishArtifact(ipfs, address, artifactJSON)
 
-		// ToDo, work on PublishFee!!
-		OIPd.Send(data, address, publishFee, function (txIDs) {
-			onSuccess(txIDs)
-		}, function(error){
-			onError(error)
-		});
+		OIPd.calculatePublishFee(signedArtJSON, function(pubFeeFLO, pubFeeUSD){
+			OIPd.Send(signedArtJSON, address, pubFeeFLO, function (txIDs) {
+				onSuccess(txIDs)
+			}, function(error){
+				onError(error)
+			});
+		}, onError);
 	};
 
 	// response=http://api.alexandria.io/#announce-new-publisher
@@ -139,75 +140,90 @@ var OIPdFunction = function(){
 
 	OIPd.sendTX = function(txComment, publishFee, onSuccess, onError){
 		var options = {};
-		if (txComment)
+
+		if (txComment){
 			options.txComment = txComment;
-		if (publishFee)
+		}
+
+		if (publishFee){
 			options.fee = publishFee;
+		} 
 
 		Wallet.sendTxComment(options, onSuccess, onError)
 	}
 
 	OIPd.multiPart = function (txComment, publishFee, onSuccess, onError) {
-	    var txIDs = [];
-
 	    var multiPartPrefix = OIPd.MP_PREFIX;
 
-	    var chop = OIPd.chopString(txComment);
+	    var multipartStrings = OIPd.createMultipartStrings(txComment);
 
-	    var part = 0;
-	    var max = chop.length - 1;
+	    var partNumber = 0;
+	    var maxParts = multipartStrings.length - 1;
 
-	    // var perPubFee = publishFee / chop.length; just publish all in the first tx fee
-	    // hardcoded to one satoshi so that it defaults to the normal amount
-	    var perPubFee = 1 / Math.pow(10,8);
+	    var stringPart = multipartStrings[partNumber];
 
-	    // the first reference tx id is always 64 zeros
-	    var reference = "";
+	    // In the first transaction, the txidRef is blank.
+	    var txidRef = "";
 
-	    var data = chop[part];
-	    var preImage = part.toString() + "-" + max.toString() + "-" + address + "-" + reference + "-" + data;
-
-	    var signature = wallet.signMessage(address, preImage);
-
-	    var multiPart = multiPartPrefix + part.toString() + "," + max.toString() +
-	        "," + address + "," + reference + "," + signature + "):" + data;
+	    var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
 
 	    // in the first transaction send the whole publish fee then only the network min from there on out
-	    wallet.sendCoins(address, address, amount, multiPart, publishFee, function (err, data) {
-	        txIDs[txIDs.length] = data.txid;
-	        reference = data.txid;
+	    OIPd.sendTX(multiPartMessage, publishFee, function (err, data) {
+	    	var txIDs = [];
 
-	        publishPart(wallet, perPubFee, chop, max, 0, reference, address, amount, multiPartPrefix, function(txids){
-	        	//console.log("Completed publishing parts! Here ya go.")
-	        	callback(null, txids);
-	        })
+	        var addTxid = function(txid){
+	        	txIDs.push(data.txid);
+	        }
+
+	        var multipartDone = function(){
+	        	onSuccess(txIDs);
+	        }
+
+	        addTxid(data.txid);
+	        
+	        var txidRef = data.txid;
+
+	        OIPd.sendRestOfMultipart(multipartStrings, txidRef, addTxid, multipartDone, onError)
 	    });
 	};
+
+	OIPd.sendRestOfMultipart = function(multipartStrings, txidRef, addTxid, multipartDone, onError){
+		// Start at (index = 1) since we already published the first part.
+		var partNumber = 1;
+		var maxParts = multipartStrings.length - 1;
+
+		var sendNextPart = function(){
+			var stringPart = multipartStrings[partNumber];
+
+			var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
+			
+			OIPd.sendTx(multiPartMessage, undefined, function(txid){
+				addTxid(txid);
+
+				if (partNumber < maxParts){
+					partNumber++;
+					sendNextPart();
+				} else {
+					multipartDone();
+				}
+			}, onError)
+		}
+	}
 
 	OIPd.createMultipartStrings = function(longTxComment){
 		return OIPd.chopString(longTxComment);
 	}
 
-	OIPd.publishPart = function(wallet, perPubFee, chopPieces, numberOfPieces, lastPiecesCompleted, reference, address, amount, multiPartPrefix, callback){
-	    var part = lastPiecesCompleted + 1;
+	OIPd.createMultipartString = function(partNumber, maxParts, txidRef, stringPart){
+		var publisherAddress = Wallet.getMainAddress('florincoin');
 
-	    var data = chopPieces[part];
-	    var preImage = part.toString() + "-" + numberOfPieces.toString() + "-" + address + "-" + reference.substring(0,10) + "-" + data;
+		var signaturePreImage = partNumber + "-" + max + "-" + publisherAddress + "-" + txidRef + "-" + stringPart;
 
-	    var signature = wallet.signMessage(address, preImage);
+	    var signature = Wallet.signMessage(publisherAddress, signaturePreImage);
 
-	    var multiPart = multiPartPrefix + part.toString() + "," + numberOfPieces.toString() +
-	        "," + address + "," + reference.substring(0,10) + "," + signature + "," + "):" + data;
+	    var multiPartMessage = OIPd.multiPartPrefix + part + "," + max + "," + publisherAddress + "," + txidRef + "," + signature + "):" + stringPart;
 
-	    wallet.sendCoins(address, address, amount, multiPart, perPubFee, function (err, data) {
-	    	txIDs[txIDs.length] = data.txid;
-
-	    	if (part < numberOfPieces){
-	        	publishPart(wallet, perPubFee, chopPieces, numberOfPieces, part, reference, address, amount, multiPartPrefix, callback);
-	    	} else {
-	    		callback(txIDs);
-	    	}
-	    });
+	    return multiPartMessage;
 	}
 
 	OIPd.chopString = function (input) {
@@ -260,6 +276,99 @@ var OIPdFunction = function(){
 		}
 
 		return patch;
+	}
+
+	OIPd.calculatePublishFee = function(artJSON, onSuccess, onError){
+		Data.getFLOPrice(function(USDperFLO){
+			Data.getOIPdInfo(function(OIPdInfo){
+				var floPerKb = 0.01; // new endpoint, using 0.1 as default for now, ToDo: Update this when changes are made!
+				var pubFeeFreeFlo = (JSON.stringify(artJSON).length / 1024) * floPerKb;
+				var pubFeeFreeUSD = pubFeeFreeFlo * USDperFLO;
+
+				var minPlayArray = [], minBuyArray = [], sugPlayArray = [], sugBuyArray = [];
+
+				if (artJSON.artifact && artJSON.artifact.storage && artJSON.artifact.storage.files){
+					var files = artJSON.artifact.storage.files;
+
+					if (!artJSON.artifact.payment){
+						artJSON.artifact.payment = {
+							maxdisc: 30
+						}
+					}
+
+					var scale = artJSON.artifact.payment.scale;
+
+					if (typeof scale === "string" && scale.split(":").length === 2){
+						scale = parseInt(scale.split(":")[0]);
+					} else {
+						scale = 1;
+					}
+
+					if (artJSON.artifact && artJSON.artifact.payment){
+						if (!artJSON.artifact.payment.maxdisc){
+							artJSON.artifact.payment.maxdisc == 30;
+						} else if (typeof artJSON.artifact.payment.maxdisc === "string"){
+							artJSON.artifact.payment.maxdisc = parseFloat(artJSON.artifact.payment.maxdisc);
+						}
+					}
+
+					for (var i = 0; i < files.length; i++) {
+						if (files[i].sugBuy){
+							// maxdisc stands for discount percentage
+							minBuyArray.push((files[i].sugBuy * (1 - (artJSON.artifact.payment.maxdisc / 100))) / scale)
+							sugBuyArray.push(files[i].sugBuy / scale)
+						}
+						if (files[i].sugPlay){
+							minPlayArray.push((files[i].sugPlay * (1 - (artJSON.artifact.payment.maxdisc / 100))) / scale);
+							sugPlayArray.push(files[i].sugPlay / scale)
+						}
+					}
+				}		
+
+				var totMinPlay = 0;
+				for (var i = 0; i < minPlayArray.length; i++) {
+					totMinPlay += minPlayArray[i];
+				}
+
+				var totMinBuy = 0;
+				for (var i = 0; i < minBuyArray.length; i++) {
+					totMinBuy += minBuyArray[i];
+				}
+
+				var totSugPlay = 0;
+				for (var i = 0; i < sugPlayArray.length; i++) {
+					totSugPlay += sugPlayArray[i];
+				}
+
+				var totSugBuy = 0;
+				for (var i = 0; i < sugBuyArray.length; i++) {
+					totSugBuy += sugBuyArray[i];
+				}
+
+				var artCost = (totMinPlay + totSugPlay + totMinBuy + totSugBuy) / 2; 
+				// divide by 2 because 
+				// devon (3:54 PM): doing it that way applies both of those impacts, which are good, and also solves the previous issue we were discussing
+
+				var avgArtCost = OIPdInfo.avgArtCost;
+
+				var pubFeeComUSD = 0;
+				if (artCost <= avgArtCost){
+					pubFeeComUSD = artCost;
+				} else {
+					pubFeeComUSD = (( Math.log(artCost) - Math.log(avgArtCost) ) * (avgArtCost / artCost) * (artCost - avgArtCost)) + avgArtCost;
+				}
+
+				var pubFeeComFlo = pubFeeComUSD / USDperFLO;
+				var pubFeeUSD = Math.max(pubFeeFreeUSD, pubFeeComUSD);
+				var pubFeeFlo = pubFeeUSD / USDperFLO;
+
+				onSuccess(pubFeeUSD, pubFeeFlo);
+			}, function(error){
+				onError(error);
+			})
+		}, function(error){
+			onError(error);
+		})	
 	}
 
 	this.OIPd = OIPd;

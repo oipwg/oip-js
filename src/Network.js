@@ -16,6 +16,9 @@ var NetworkFunction = function(){
 	Network.cachedArtifacts = [];
 	Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
 	Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+	Network.cachedOIPdInfo = {};
+	Network.oipdInfoLastUpdate = 0; // timestamp of last ajax call to the info endpoint
+	Network.oipdInfoUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Network.cachedBTCPriceObj = {};
 	Network.cachedFLOPriceObj = {};
 	Network.cachedLTCPriceObj = {};
@@ -31,6 +34,24 @@ var NetworkFunction = function(){
 		Network.ipfs = new IPFS_MAIN(settings.ipfsConfig);
 	} catch (e) {
 		Network.ipfs = "not-supported"
+	}
+
+	Network.getLatestOIPdInfo = function(onSuccess, onError){
+		if ((Date.now() - Network.oipdInfoLastUpdate) > Network.oipdInfoUpdateTimelimit){
+			axios.get(settings.OIPdURL + "/info", {
+				transformResponse: [function (data) {
+					return [...data]; 
+				}], responseType: 'json'
+			}).then( function(results){ 
+				Network.cachedOIPdInfo = results.data;
+				Network.oipdInfoLastUpdate = Date.now();
+				onSuccess(Network.cachedOIPdInfo);
+			}).catch(function(error){
+				onError(error);
+			});
+		} else {
+			onSuccess(Network.cachedOIPdInfo);
+		}
 	}
 
 	Network.searchOIPd = function(options, onSuccess, onError){

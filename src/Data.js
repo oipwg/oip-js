@@ -54,6 +54,10 @@ var DataFunction = function(){
 		})
 	}
 
+	Data.getOIPdInfo = function(onSuccess, onError){
+		Network.getLatestOIPdInfo(onSuccess, onError);
+	}
+
 	this.Data = Data;
 	return this.Data;
 }

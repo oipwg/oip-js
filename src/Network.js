@@ -1,11 +1,6 @@
 import axios from 'axios';
 import qs from 'qs';
-
-try {
-	var IPFS_MAIN = require('ipfs');
-} catch (e) { 
-	console.log(e);
-}	
+import IPFS_MAIN from 'ipfs';
 
 var NetworkFunction = function(){
 	var settings = this.settings;

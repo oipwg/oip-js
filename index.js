@@ -10,7 +10,7 @@ import OIPd from './src/OIPd.js';
 import Publisher from './src/Publisher.js';
 import Comments from './src/Comments.js';
 
-var AlexandriaCore = function(){
+var OIPdJS = function(){
 	var Core = {};
 
 	Core.settings = settings.bind(Core)();
@@ -28,4 +28,4 @@ var AlexandriaCore = function(){
 	return Core;
 };
 
-export default AlexandriaCore();
+module.exports = OIPdJS();

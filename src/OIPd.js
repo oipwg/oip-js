@@ -2,6 +2,7 @@ import jsonpatch from 'fast-json-patch';
 import MD5 from 'crypto-js/md5';
 
 var OIPdFunction = function(){
+	var Artifact = this.Artifact;
 	var Data = this.Data;
 	var Wallet = this.Wallet;
 	var User = this.User;
@@ -35,27 +36,29 @@ var OIPdFunction = function(){
 		return Wallet.signMessage(publisher, toSign);
 	};
 
-	OIPd.signPublishArtifact = function(ipfs, address, artifactJSON) {
-		var time = OIPd.unixTime();
-
-		var signature = OIPd.signArtifact(ipfs, address, time);
-
-		var data = {
+	OIPd.signPublishArtifact = function(artifactJSON) {
+		var artJSON = {
 			"oip-041": {
-				"artifact": artifactJSON.artifact, 
-				signature: signature
+				"artifact": artifactJSON.artifact
 			}
 		};
 
-		data["oip-041"]["artifact"].timestamp = parseInt(time);
-		data["oip-041"]["artifact"].publisher = address;
+		var time = OIPd.unixTime();
+		var ipfs = Artifact.getLocation(artJSON);
+		var address = Wallet.getMainAddress('florincoin');
+
+		var signature = OIPd.signArtifact(ipfs, address, time);
+
+		artJSON['oip-041'].signature = signature;
+		artJSON["oip-041"]["artifact"].timestamp = parseInt(time);
+		artJSON["oip-041"]["artifact"].publisher = address;
 
 		return data;
 	};
 
 	// response=http://api.alexandria.io/#publish-new-artifact
-	OIPd.publishArtifact = function (ipfs, address, artifactJSON, onSuccess, onError) {
-		var signedArtJSON = OIPd.signPublishArtifact(ipfs, address, artifactJSON)
+	OIPd.publishArtifact = function (artifactJSON, onSuccess, onError) {
+		var signedArtJSON = OIPd.signPublishArtifact(artifactJSON)
 
 		OIPd.calculatePublishFee(signedArtJSON, function(pubFeeFLO, pubFeeUSD){
 			OIPd.Send(signedArtJSON, address, pubFeeFLO, function (txIDs) {

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "browserify": "browserify index.js --standalone OIPJS -o demo/OIPJS-browserify.js -t [ babelify --presets [ es2015 ] ]"
+    "browserify": "browserify browserify.js --standalone OIPJS -o demo/OIPJS-browserify.js -t [ babelify --presets [ es2015 ] ]"
   },
   "repository": {
     "type": "git",

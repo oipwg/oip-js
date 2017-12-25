@@ -10,7 +10,7 @@ import OIPd from './src/OIPd.js';
 import Publisher from './src/Publisher.js';
 import Comments from './src/Comments.js';
 
-var OIPdJS = function(){
+var OIPJS = function(){
 	var Core = {};
 
 	Core.settings = settings.bind(Core)();
@@ -28,4 +28,4 @@ var OIPdJS = function(){
 	return Core;
 };
 
-module.exports = OIPdJS();
+export default OIPJS();

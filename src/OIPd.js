@@ -4,6 +4,7 @@ import MD5 from 'crypto-js/md5';
 var OIPdFunction = function(){
 	var Artifact = this.Artifact;
 	var Data = this.Data;
+	var Index = this.Index;
 	var Wallet = this.Wallet;
 	var User = this.User;
 	var OIPd = {}
@@ -36,6 +37,15 @@ var OIPdFunction = function(){
 		return Wallet.signMessage(publisher, toSign);
 	};
 
+	OIPd.signArtifactEdit = function (txid, timestamp) {
+		// https://api.alexandria.io/docs/#sign-an-artifact-deactivation-message
+		var publisher = Wallet.getMainAddress('florincoin');
+
+		var toSign = txid + "-" + publisher + "-" + timestamp;
+
+		return Wallet.signMessage(publisher, toSign);
+	};
+
 	OIPd.signPublishArtifact = function(artifactJSON) {
 		var artJSON = {
 			"oip-041": {
@@ -50,10 +60,30 @@ var OIPdFunction = function(){
 		var signature = OIPd.signArtifact(ipfs, address, time);
 
 		artJSON['oip-041'].signature = signature;
-		artJSON["oip-041"]["artifact"].timestamp = parseInt(time);
+		artJSON["oip-041"]["artifact"].timestamp = time;
 		artJSON["oip-041"]["artifact"].publisher = address;
 
 		return data;
+	};
+
+	OIPd.announcePublisher = function (name, address, email, onSuccess, onError) {
+		var time = OIPd.unixTime();
+
+		var signature = OIPd.signPublisher(name, address, time);
+
+		var data = {
+			"alexandria-publisher": {
+				"name": name,
+				"address": address,
+				"timestamp": time,
+				"email": MD5(email).toString()
+			},
+			"signature": signature
+		};
+
+		OIPd.Send(data, function(txid){
+			onSuccess({name: name, address: address, timestamp: time, email: MD5(email).toString(), txid: txid.txid})
+		}, onError);
 	};
 
 	// response=http://api.alexandria.io/#publish-new-artifact
@@ -69,42 +99,45 @@ var OIPdFunction = function(){
 		}, onError);
 	};
 
-	// response=http://api.alexandria.io/#announce-new-publisher
-	OIPd.announcePublisher = function (name, address, email, onSuccess, onError) {
-		var time = OIPd.unixTime();
+	OIPd.editArtifact = function (txid, newArtJSON, onSuccess, onError) {
+		Index.getArtifactFromID(txid, function(originalArtJSON){
+			var origArtJSON = Index.stripIndexData(originalArtJSON);
 
-		var signature = OIPd.signPublisher(name, address, time);
+			var time = OIPd.unixTime();
+			var address = Wallet.getMainAddress('florincoin');
 
-		var data = {
-			"alexandria-publisher": {
-				"name": name,
-				"address": address,
-				"timestamp": parseInt(time),
-				"email": MD5(email).toString()
-			},
-			"signature": signature
-		};
+			var signature = OIPd.signArtifactEdit(txid, time);
 
-		OIPd.Send(data, function(txid){
-			onSuccess({name: name, address: address, timestamp: parseInt(time), email: MD5(email).toString(), txid: txid.txid})
-		}, onError);
+			var artJSON = {  
+				"oip-041":{  
+					"editArtifact":{  
+						"txid": txid,
+						"timestamp": time,
+						"patch": OIPd.createSquashedPatch(origArtJSON, newArtJSON)
+					},
+					"signature": signature
+				}
+			};
+
+			console.log(artJSON);
+			OIPd.Send(artJSON, onSuccess, onError);	
+		}, onError)
 	};
 
-	// callback is (errorString, response) response=https://api.alexandria.io/docs/#deactivate-an-artifact
 	OIPd.deactivateArtifact = function (txid, onSuccess, onError) {
 		var time = OIPd.unixTime();
 		var address = Wallet.getMainAddress('florincoin');
 
-		var signature = OIPd.signArtifactDeactivation(txid, address, parseInt(time));
+		var signature = OIPd.signArtifactDeactivation(txid, address, time);
 
 		var data = {  
-		    "oip-041":{  
-		        "deactivateArtifact":{  
-		            "txid":txid,
-		            "timestamp":parseInt(time)
-		        },
-		        "signature":signature
-		    }
+			"oip-041":{  
+				"deactivateArtifact":{  
+					"txid": txid,
+					"timestamp": time
+				},
+				"signature": signature
+			}
 		};
 
 		OIPd.Send(data, onSuccess, onError);
@@ -112,7 +145,7 @@ var OIPdFunction = function(){
 
 	OIPd.unixTime = function () {
 		// slice is to strip milliseconds
-		return Date.now().toString().slice(0, -3);
+		return parseInt(Date.now().toString().slice(0, -3));
 	}
 
 	OIPd.Send = function (jsonData, onSuccess, onError) {
@@ -158,38 +191,39 @@ var OIPdFunction = function(){
 	}
 
 	OIPd.multiPart = function (txComment, publishFee, onSuccess, onError) {
-	    var multiPartPrefix = OIPd.MP_PREFIX;
+		var multipartStrings = OIPd.createMultipartStrings(txComment);
 
-	    var multipartStrings = OIPd.createMultipartStrings(txComment);
+		var partNumber = 0;
+		var maxParts = multipartStrings.length - 1;
 
-	    var partNumber = 0;
-	    var maxParts = multipartStrings.length - 1;
+		var stringPart = multipartStrings[partNumber];
 
-	    var stringPart = multipartStrings[partNumber];
+		// In the first transaction, the txidRef is blank.
+		var txidRef = "";
 
-	    // In the first transaction, the txidRef is blank.
-	    var txidRef = "";
+		var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
 
-	    var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
+		// in the first transaction send the whole publish fee then only the network min from there on out
+		console.log("Sending first part!");
+		OIPd.sendTX(multiPartMessage, publishFee, function (data) {
+			var txIDs = [];
 
-	    // in the first transaction send the whole publish fee then only the network min from there on out
-	    OIPd.sendTX(multiPartMessage, publishFee, function (err, data) {
-	    	var txIDs = [];
+			var addTxid = function(txid){
+				txIDs.push(txid);
+			}
 
-	        var addTxid = function(txid){
-	        	txIDs.push(data.txid);
-	        }
+			var multipartDone = function(){
+				onSuccess(txIDs);
+			}
 
-	        var multipartDone = function(){
-	        	onSuccess(txIDs);
-	        }
+			addTxid(data.txid);
+			
+			var txidRef = data.txid;
 
-	        addTxid(data.txid);
-	        
-	        var txidRef = data.txid;
+			txidRef = txidRef.substr(0,10);
 
-	        OIPd.sendRestOfMultipart(multipartStrings, txidRef, addTxid, multipartDone, onError)
-	    });
+			OIPd.sendRestOfMultipart(multipartStrings, txidRef, addTxid, multipartDone, onError)
+		}, onError);
 	};
 
 	OIPd.sendRestOfMultipart = function(multipartStrings, txidRef, addTxid, multipartDone, onError){
@@ -198,12 +232,13 @@ var OIPdFunction = function(){
 		var maxParts = multipartStrings.length - 1;
 
 		var sendNextPart = function(){
+			console.log("Sending...", partNumber, maxParts)
 			var stringPart = multipartStrings[partNumber];
 
 			var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
 			
-			OIPd.sendTx(multiPartMessage, undefined, function(txid){
-				addTxid(txid);
+			OIPd.sendTX(multiPartMessage, undefined, function(data){
+				addTxid(data.txid);
 
 				if (partNumber < maxParts){
 					partNumber++;
@@ -225,22 +260,22 @@ var OIPdFunction = function(){
 	OIPd.createMultipartString = function(partNumber, maxParts, txidRef, stringPart){
 		var publisherAddress = Wallet.getMainAddress('florincoin');
 
-		var signaturePreImage = partNumber + "-" + max + "-" + publisherAddress + "-" + txidRef + "-" + stringPart;
+		var signaturePreImage = partNumber + "-" + maxParts + "-" + publisherAddress + "-" + txidRef + "-" + stringPart;
 
-	    var signature = Wallet.signMessage(publisherAddress, signaturePreImage);
+		var signature = Wallet.signMessage(publisherAddress, signaturePreImage);
 
-	    var multiPartMessage = OIPd.multiPartPrefix + part + "," + max + "," + publisherAddress + "," + txidRef + "," + signature + "):" + stringPart;
+		var multiPartMessage = OIPd.MP_PREFIX + partNumber + "," + maxParts + "," + publisherAddress + "," + txidRef + "," + signature + "):" + stringPart;
 
-	    return multiPartMessage;
+		return multiPartMessage;
 	}
 
 	OIPd.chopString = function (input) {
 		input = input.toString();
 
 		var chunks = [];
-		while (input.length > CHOP_MAX_LEN) {
-			chunks[chunks.length] = input.slice(0, CHOP_MAX_LEN);
-			input = input.slice(CHOP_MAX_LEN);
+		while (input.length > OIPd.CHOP_MAX_LEN) {
+			chunks[chunks.length] = input.slice(0, OIPd.CHOP_MAX_LEN);
+			input = input.slice(OIPd.CHOP_MAX_LEN);
 		}
 		chunks[chunks.length] = input;
 
@@ -248,7 +283,13 @@ var OIPdFunction = function(){
 	};
 
 	OIPd.createSquashedPatch = function(original, modified){
+		var patch = jsonpatch.compare(original, modified);
 
+		if (patch) {
+			patch = OIPd.squashPatch(patch);
+		}
+
+		return patch;
 	}
 
 	OIPd.squashPatch = function(patch){
@@ -262,8 +303,16 @@ var OIPdFunction = function(){
 			// Check what the operation is, and put it in the right place
 			if (!squashed[operation])
 				squashed[operation] = [];
-			
-			squashed[operation].push(patch[i]);
+
+			var newPatch = {};
+
+			if (patch[i].path && patch[i].value){
+				newPatch[patch[i].path] = patch[i].value
+
+				squashed[operation].push(patch[i]);
+			} else if (patch[i].path && !patch[i].value) {
+				squashed[operation].push(patch[i].path);
+			}
 		}
 		
 		return squashed;
@@ -276,10 +325,22 @@ var OIPdFunction = function(){
 			for (var i = 0; i < squashedPatch[op].length; i++) {
 				// Load what we saved from the patch
 				var singlePatch = squashedPatch[op];
+				// Create the new single patch to read from
+				var newSingle = {};
 				// Restore the operation to the patch
-				singlePatch.op = op;
-				// Add singlePatch to patch
-				patch.push(singlePatch);
+				newSingle.op = op;
+				
+				if (typeof singlePatch === "string"){
+					newSingle.path = singlePatch;
+				} else if (typeof singlePatch === "object"){
+					var path = Object.keys(singlePatch)[0];
+					var value = singlePatch[path];
+					newSingle.path = path;
+					newSingle.value = value;
+				}
+				
+				// Add newSingle to patch
+				patch.push(newSingle);
 			}
 		}
 

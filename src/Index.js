@@ -5,11 +5,11 @@ var IndexFunction = function(){
 
 	Index.supportedArtifacts = [];
 
-	Index.getSupportedArtifacts = function(callback){
+	Index.getSupportedArtifacts = function(onSuccess, onError){
 		Network.getArtifactsFromOIPd(function(jsonResult) {
 			let filtered = Index.stripUnsupported(jsonResult);
-			callback([...filtered]);
-		});
+			onSuccess([...filtered]);
+		}, onError);
 	}
 
 	Index.getSuggestedContent = function(userid, callback){
@@ -40,14 +40,14 @@ var IndexFunction = function(){
 		return [...supportedArtifacts];
 	}
 
-	Index.getArtifactFromID = function(id, callback){
+	Index.getArtifactFromID = function(id, onSuccess, onError){
 		Index.getSupportedArtifacts(function(supportedArtifacts){
 			for (var i = 0; i < supportedArtifacts.length; i++) {
 				if (supportedArtifacts[i].txid.substr(0, id.length) === id){
-					callback([...[supportedArtifacts[i]]]);
+					onSuccess([...[supportedArtifacts[i]]][0]);
 				}
 			}
-		})
+		}, onError)
 	}
 
 	Index.search = function(options, onSuccess, onError){
@@ -71,6 +71,7 @@ var IndexFunction = function(){
 				}
 			}
 		}
+
 		Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
 			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
 		}, function(err){
@@ -78,11 +79,19 @@ var IndexFunction = function(){
 		});
 	}
 
-	Index.getRandomSuggested = function(onSuccess){
+	Index.getRandomSuggested = function(onSuccess, onError){
 		Index.getSupportedArtifacts(function(results){
 			let randomArt = results.sort( function() { return 0.5 - Math.random() } ).slice(0,15);
 			onSuccess(randomArt);
-		});
+		}, onError);
+	}
+
+	Index.stripIndexData = function(artJson){
+		var strippedArtJSON = {
+			"oip-041": artJson["oip-041"]
+		}
+
+		return strippedArtJSON;
 	}
 
 	this.Index = Index;

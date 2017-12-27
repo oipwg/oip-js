@@ -4,6 +4,9 @@ An NPM module containing all of the core functionality to run any OIP front end.
 ## Work in Progress
 This section is a work in progress, so more information will be added periotically. Information may be out of data, for latest information, please read the code :)
 
+## Browserify
+There is a browserified version of OIP-JS that can be compiled with `npm run browserify`. You can find a demo of how to use the Browserified version inside of the `/demo` folder in this repository. Please note that the compiled bundle provided in the repo may not be the most up to date version. When in doubt, be sure to compile it using the command above for the latest version.
+
 ### Modules
 Inside of OIP-JS there are currently 11 modules. Each of the four modules have specific tasks to try and seperate the logic out. They are seperated as follows:
 

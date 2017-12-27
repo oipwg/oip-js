@@ -145,6 +145,8 @@ var WalletFunction = function(){
 	}
 
 	Wallet.sendTxComment = function(options, onSuccess, onError){
+		console.log("Sending TX Comment", options);
+		
 		var pubAddress = Wallet.wallet.getMainAddress('florincoin');
 		Wallet.wallet.payTo(pubAddress, pubAddress, 0.001, options, function(error, success){
 			console.log(success, error)
@@ -165,8 +167,6 @@ var WalletFunction = function(){
 	Wallet.sendPayment = function(coin, fiat, fiat_amount, payTo, onSuccess, onError){
 		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
 		console.log(coin, fiat, fiat_amount, payTo);
-
-
 
 		if (coin !== "florincoin"){
 			console.error("Attempting to send currency with " + coin + " will not calculte the correct USD value!!!");

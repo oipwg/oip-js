@@ -1,4 +1,4 @@
-import jsonpatch from 'fast-json-patch';
+import * as jsonpatch from 'rfc6902';
 import MD5 from 'crypto-js/md5';
 
 var OIPdFunction = function(){
@@ -119,7 +119,6 @@ var OIPdFunction = function(){
 				}
 			};
 
-			console.log(artJSON);
 			OIPd.Send(artJSON, onSuccess, onError);	
 		}, onError)
 	};
@@ -204,7 +203,6 @@ var OIPdFunction = function(){
 		var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
 
 		// in the first transaction send the whole publish fee then only the network min from there on out
-		console.log("Sending first part!");
 		OIPd.sendTX(multiPartMessage, publishFee, function (data) {
 			var txIDs = [];
 
@@ -232,7 +230,6 @@ var OIPdFunction = function(){
 		var maxParts = multipartStrings.length - 1;
 
 		var sendNextPart = function(){
-			console.log("Sending...", partNumber, maxParts)
 			var stringPart = multipartStrings[partNumber];
 
 			var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
@@ -283,7 +280,7 @@ var OIPdFunction = function(){
 	};
 
 	OIPd.createSquashedPatch = function(original, modified){
-		var patch = jsonpatch.compare(original, modified);
+		var patch = jsonpatch.createPatch(original, modified);
 
 		if (patch) {
 			patch = OIPd.squashPatch(patch);
@@ -338,7 +335,7 @@ var OIPdFunction = function(){
 					newSingle.path = path;
 					newSingle.value = value;
 				}
-				
+
 				// Add newSingle to patch
 				patch.push(newSingle);
 			}

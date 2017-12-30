@@ -63,7 +63,7 @@ var OIPdFunction = function(){
 		artJSON["oip-041"]["artifact"].timestamp = time;
 		artJSON["oip-041"]["artifact"].publisher = address;
 
-		return data;
+		return artJSON;
 	};
 
 	OIPd.announcePublisher = function (name, address, email, onSuccess, onError) {
@@ -91,7 +91,7 @@ var OIPdFunction = function(){
 		var signedArtJSON = OIPd.signPublishArtifact(artifactJSON)
 
 		OIPd.calculatePublishFee(signedArtJSON, function(pubFeeFLO, pubFeeUSD){
-			OIPd.Send(signedArtJSON, address, pubFeeFLO, function (txIDs) {
+			OIPd.Send(signedArtJSON, pubFeeFLO, function (txIDs) {
 				onSuccess(txIDs)
 			}, function(error){
 				onError(error)
@@ -147,7 +147,7 @@ var OIPdFunction = function(){
 		return parseInt(Date.now().toString().slice(0, -3));
 	}
 
-	OIPd.Send = function (jsonData, onSuccess, onError) {
+	OIPd.Send = function (jsonData, publishFee, onSuccess, onError) {
 		if (!User.isLoggedIn || !Wallet.wallet){
 			onError("Error, you must be logged in to publish!");
 			return;
@@ -158,7 +158,11 @@ var OIPdFunction = function(){
 			return;
 		}
 
-		var publishFee;
+		if (typeof publishFee === "function"){
+			onError = onSuccess;
+			onSuccess = publishFee;
+			publishFee = undefined;
+		}
 
 		OIPd.sendToBlockChain(JSON.stringify(jsonData), publishFee, onSuccess, onError);
 	};

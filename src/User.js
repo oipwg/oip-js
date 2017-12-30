@@ -55,7 +55,7 @@ var UserFunction = function(){
 		User.isLoggedIn = false;
 		User.isPublisher = false;
 
-		Wallet.logout();
+		Wallet.Logout();
 	}
 
 	User.FollowPublisher = function(publisher){

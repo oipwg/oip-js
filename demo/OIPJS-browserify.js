@@ -131718,7 +131718,7 @@ var OIPdFunction = function OIPdFunction() {
 		artJSON["oip-041"]["artifact"].timestamp = time;
 		artJSON["oip-041"]["artifact"].publisher = address;
 
-		return data;
+		return artJSON;
 	};
 
 	OIPd.announcePublisher = function (name, address, email, onSuccess, onError) {
@@ -131746,7 +131746,7 @@ var OIPdFunction = function OIPdFunction() {
 		var signedArtJSON = OIPd.signPublishArtifact(artifactJSON);
 
 		OIPd.calculatePublishFee(signedArtJSON, function (pubFeeFLO, pubFeeUSD) {
-			OIPd.Send(signedArtJSON, address, pubFeeFLO, function (txIDs) {
+			OIPd.Send(signedArtJSON, pubFeeFLO, function (txIDs) {
 				onSuccess(txIDs);
 			}, function (error) {
 				onError(error);
@@ -131774,7 +131774,6 @@ var OIPdFunction = function OIPdFunction() {
 				}
 			};
 
-			console.log(artJSON);
 			OIPd.Send(artJSON, onSuccess, onError);
 		}, onError);
 	};
@@ -131803,7 +131802,7 @@ var OIPdFunction = function OIPdFunction() {
 		return parseInt(Date.now().toString().slice(0, -3));
 	};
 
-	OIPd.Send = function (jsonData, onSuccess, onError) {
+	OIPd.Send = function (jsonData, publishFee, onSuccess, onError) {
 		if (!User.isLoggedIn || !Wallet.wallet) {
 			onError("Error, you must be logged in to publish!");
 			return;
@@ -131814,7 +131813,11 @@ var OIPdFunction = function OIPdFunction() {
 			return;
 		}
 
-		var publishFee;
+		if (typeof publishFee === "function") {
+			onError = onSuccess;
+			onSuccess = publishFee;
+			publishFee = undefined;
+		}
 
 		OIPd.sendToBlockChain(JSON.stringify(jsonData), publishFee, onSuccess, onError);
 	};
@@ -131858,7 +131861,6 @@ var OIPdFunction = function OIPdFunction() {
 		var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
 
 		// in the first transaction send the whole publish fee then only the network min from there on out
-		console.log("Sending first part!");
 		OIPd.sendTX(multiPartMessage, publishFee, function (data) {
 			var txIDs = [];
 
@@ -131886,7 +131888,6 @@ var OIPdFunction = function OIPdFunction() {
 		var maxParts = multipartStrings.length - 1;
 
 		var sendNextPart = function sendNextPart() {
-			console.log("Sending...", partNumber, maxParts);
 			var stringPart = multipartStrings[partNumber];
 
 			var multiPartMessage = OIPd.createMultipartString(partNumber, maxParts, txidRef, stringPart);
@@ -131937,9 +131938,7 @@ var OIPdFunction = function OIPdFunction() {
 	};
 
 	OIPd.createSquashedPatch = function (original, modified) {
-		console.log(original, modified);
 		var patch = jsonpatch.createPatch(original, modified);
-		console.log(patch);
 
 		if (patch) {
 			patch = OIPd.squashPatch(patch);
@@ -132206,7 +132205,7 @@ var UserFunction = function UserFunction() {
 		User.isLoggedIn = false;
 		User.isPublisher = false;
 
-		Wallet.logout();
+		Wallet.Logout();
 	};
 
 	User.FollowPublisher = function (publisher) {};
@@ -132266,7 +132265,7 @@ var WalletFunction = function WalletFunction() {
 			email: email,
 			password: password
 		}).then(function (wallet) {
-			Wallet.Login(email, password, onSuccess, onError);
+			Wallet.Login(wallet.identifier, password, onSuccess, onError);
 		}).catch(onError);
 	};
 
@@ -132278,6 +132277,10 @@ var WalletFunction = function WalletFunction() {
 		}).catch(function (error) {
 			onError(error);
 		});
+	};
+
+	Wallet.Logout = function () {
+		Wallet.wallet = undefined;
 	};
 
 	Wallet.getMainAddress = function (coin) {
@@ -132324,30 +132327,6 @@ var WalletFunction = function WalletFunction() {
 		}, onError);
 	};
 
-	Wallet.tryAddUnconfirmed = function (flo_address, txinfo, onSuccess, onError) {
-		for (var key in Wallet.wallet.keys) {
-			if (Wallet.wallet.keys[key].coins.florincoin) {
-				for (var i in txinfo.vout) {
-					for (var j in txinfo.vout[i].scriptPubKey.addresses) {
-						if (txinfo.vout[i].scriptPubKey.addresses[j] === Wallet.wallet.keys[key].coins.florincoin.address) {
-							var txid = txinfo.txid;
-							var vout = txinfo.vout[i].n;
-							var amount = txinfo.vout[i].value;
-							var satoshi = amount * Wallet.wallet.keys[key].coins.florincoin.coinInfo.satPerCoin;
-							var inputs = [];
-
-							Wallet.wallet.keys[key].coins.florincoin.addUnconfirmed(txid, vout, amount, satoshi, inputs);
-							Wallet.wallet.store();
-							Wallet.refresh();
-
-							onSuccess(txinfo);
-						}
-					}
-				}
-			}
-		}
-	};
-
 	Wallet.createAndEmitState = function (onSuccess, onError) {
 		if (!onSuccess) onSuccess = function onSuccess() {};
 		if (!onError) onError = function onError() {};
@@ -132383,7 +132362,7 @@ var WalletFunction = function WalletFunction() {
 	};
 
 	Wallet.sendTxComment = function (options, onSuccess, onError) {
-		console.log("Sending tx comment...", options);
+		console.log("Sending TX Comment", options);
 
 		var pubAddress = Wallet.wallet.getMainAddress('florincoin');
 		Wallet.wallet.payTo(pubAddress, pubAddress, 0.001, options, function (error, success) {
@@ -132396,8 +132375,6 @@ var WalletFunction = function WalletFunction() {
 				Wallet.createAndEmitState(function () {
 					Wallet.refresh();
 				});
-
-				console.log("Sent TX!", success);
 
 				onSuccess(success);
 			}
@@ -132440,7 +132417,9 @@ var WalletFunction = function WalletFunction() {
 	};
 
 	Wallet.createState = function () {
-		var state = {};
+		var state = {
+			identifier: Wallet.wallet.identifier
+		};
 
 		var supportedCoins = _oipmw2.default.Networks.listSupportedCoins();
 

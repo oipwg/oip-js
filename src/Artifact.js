@@ -162,65 +162,12 @@ var ArtifactFunction = function(){
 		return duration;
 	}
 
-	Artifact.getMainPaidFile = function(oip, type){
-		let mainFile;
-
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-
-		for (let i = 0; i < files.length; i++){
-			if (files[i].type === type && (files[i].sugPlay !== 0 || files[i].sugBuy !== 0) && !mainFile){
-				mainFile = files[i];
-			}
-		}
-
-		return mainFile;
-	}
-
-	Artifact.getMainFileSugPlay = function(oip, type){
-		let sugPlay = 0;
-
+	Artifact.getTipPrefs = function(oip){
+		let sugTip = [];
 		try {
-			sugPlay = Artifact.getMainPaidFile(oip, type).sugPlay / Artifact.getScale(oip);
-		} catch (e) {}
-
-		return sugPlay 
-	}
-
-	Artifact.getMainFileSugBuy = function(oip, type){
-		let sugBuy = 0;
-
-		try {
-			sugBuy = Artifact.getMainPaidFile(oip, type).sugBuy / Artifact.getScale(oip);
-		} catch (e) {}
-
-		return sugBuy
-	}
-
-	Artifact.getMainFileDisPlay = function(oip, type){
-		let disPlay = false;
-
-		try {
-			disPlay = Artifact.getMainPaidFile(oip, type).disPlay;
-		} catch (e) {}
-
-		if (!disPlay)
-			disPlay = false;
-
-		return disPlay
-	}
-
-	Artifact.getMainFileDisBuy = function(oip, type){
-		let disBuy = 0;
-
-		try {
-			disBuy = Artifact.getMainPaidFile(oip, type).disBuy;
-		} catch (e) {}
-
-		if (!disBuy)
-			disBuy = false;
-
-		return disBuy
+			sugTip = oip['oip-041'].artifact.payment.sugTip
+		} catch(e) {}
+		return sugTip;
 	}
 
 	Artifact.getThumbnail = function(oip){
@@ -244,127 +191,6 @@ var ArtifactFunction = function(){
 		}
 
 		return thumbnail;
-	}
-
-	Artifact.getAlbumArt = function(oip){
-		let albumArt;
-
-		let files = Artifact.getFiles(oip);
-
-		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && !albumArt){
-				albumArt = files[i];
-			}
-		}
-
-		if (!albumArt){
-			for (let i = 0; i < files.length; i++){
-				if (files[i].type === "Image" && files[i].subtype === "album-art" && !files[i].sugPlay && !albumArt){
-					albumArt = files[i];
-				}
-			}
-		}
-
-		if (!albumArt){
-			albumArt = Artifact.getThumbnail(oip);
-		}
-
-		return albumArt;
-	}
-
-	Artifact.getFirstImage = function(oip){
-		let imageGet;
-
-		let files = Artifact.getFiles(oip);
-		//let location = Artifact.getLocation(oip);
-
-		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && !imageGet){
-				imageGet = files[i];
-			}
-		}
-
-		// let imageURL = "";
-
-		// if (imageGet){
-		// 	imageURL = location + "/" + imageGet.fname;
-		// }
-
-		return imageGet;
-	}
-
-	Artifact.getFirstHTML = function(oip){
-		let htmlGet;
-
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-
-		for (let i = 0; i < files.length; i++){
-			let extension = util.getExtension(files[i].fname);
-			if ((extension === "html" || extension === "HTML") && !htmlGet){
-				htmlGet = files[i];
-			}
-		}
-
-		let htmlURL = "";
-
-		if (htmlGet){
-			htmlURL = location + "/" + htmlGet.fname;
-		}
-
-		return htmlURL;
-	}
-
-	Artifact.getFirstHTMLURL = function(oip){
-		let htmlGet;
-
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-
-		for (let i = 0; i < files.length; i++){
-			let extension = util.getExtension(files[i].fname);
-			if ((extension === "html" || extension === "HTML") && !htmlGet){
-				htmlGet = files[i];
-			}
-		}
-
-		let htmlURL = "";
-
-		if (htmlGet){
-			htmlURL = location + "/" + htmlGet.fname;
-		}
-
-		return util.buildIPFSURL(htmlURL);
-	}
-
-	Artifact.getSongs = function(oip){
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-		let artist = Artifact.getArtist(oip);
-
-		let albumArtwork = Artifact.getAlbumArt(oip);
-
-		let albumArtUrl = util.buildIPFSURL(util.buildIPFSShortURL(Artifact.getLocation(oip), albumArtwork));
-
-		let songs = [];
-
-		for (var i = 0; i < files.length; i++){
-			if (files[i].type === "Audio"){
-				let durationNice = util.formatDuration(files[i].duration);
-
-				let songObj = JSON.parse(JSON.stringify(files[i]));
-
-				songObj.location = location;
-				songObj.artist = files[i].artist ? files[i].artist : artist
-				songObj.name = files[i].dname ? files[i].dname : files[i].fname
-				songObj.albumArtwork = albumArtUrl
-				songObj.length = durationNice
-
-				songs.push(songObj);
-			}
-		}
-
-		return songs;
 	}
 
 	Artifact.getEntypoIconForType = function(type){
@@ -418,34 +244,6 @@ var ArtifactFunction = function(){
 			paid = true;
 
 		return paid;
-	}
-
-	Artifact.checkPaidViewFile = function(file){
-		let paid = false;
-		if (file.sugPlay)
-			paid = true;
-
-		return paid;
-	}
-
-	Artifact.getFormattedVideoQualities = function(oip){
-		let files = Artifact.getFiles(oip);
-
-		let qualityArr = [];
-
-		for (var i = files.length - 1; i >= 0; i--) {
-			if (files[i].subtype === "HD720" || 
-				files[i].subtype === "SD480" || 
-				files[i].subtype === "LOW320" || 
-				files[i].subtype === "MOB240"){
-				qualityArr.push({
-					format: files[i].subtype,
-					src: util.buildIPFSURL(util.buildIPFSShortURL(Artifact.getLocation(oip), files[i])),
-					type: "video/" + util.getExtension(files[i].fname)
-				})
-			}
-
-		}
 	}
 
 	Artifact.getPaymentAddresses = function(oip, file){

@@ -9,8 +9,11 @@ var NetworkFunction = function(){
 	var Network = {};
 
 	Network.cachedArtifacts = [];
+	Network.cachedPublishers = [];
 	Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
+	Network.publishersLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
 	Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+	Network.publishersUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Network.cachedOIPdInfo = {};
 	Network.oipdInfoLastUpdate = 0; // timestamp of last ajax call to the info endpoint
 	Network.oipdInfoUpdateTimelimit = 5 * 60 * 1000; // Five minutes
@@ -93,6 +96,24 @@ var NetworkFunction = function(){
 			});
 		} else {
 			onSuccess(Network.cachedArtifacts);
+		}
+	}
+
+	Network.getPublishersFromOIPd = function(onSuccess, onError){
+		if ((Date.now() - Network.publishersLastUpdate) > Network.publishersUpdateTimelimit){
+			axios.get(settings.OIPdURL + "/publisher/get/all", {
+				transformResponse: [function (data) {
+					return [...data]; 
+				}], responseType: 'json'
+			}).then( function(results){ 
+				Network.cachedPublishers = results.data;
+				Network.publishersLastUpdate = Date.now();
+				onSuccess(Network.cachedPublishers);
+			}).catch(function(error){
+				onError(error);
+			});
+		} else {
+			onSuccess(Network.cachedPublishers);
 		}
 	}
 

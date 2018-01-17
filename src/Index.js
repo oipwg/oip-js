@@ -1,4 +1,5 @@
 var IndexFunction = function(){
+	var Artifact = this.Artifact;
 	var Network = this.Network;
 
 	var Index = {};
@@ -60,6 +61,21 @@ var IndexFunction = function(){
 		})
 	}
 
+	Index.getRegisteredPublishers = function(onSuccess, onError){
+		var pubs = [];
+		if (localStorage.registeredPublishers){
+			pubs = JSON.parse(localStorage.registeredPublishers).arr;
+		}
+
+		Network.getPublishersFromOIPd(function(jsonResult) {
+			var newPubs = jsonResult;
+			for (var i = 0; i < pubs.length; i++) {
+				newPubs.push(pubs[i])
+			}
+			onSuccess(newPubs);
+		});
+	}
+
 	Index.getPublisher = function(id, onSuccess, onError){
 		if (localStorage.registeredPublishers){
 			var pubs = JSON.parse(localStorage.registeredPublishers).arr;
@@ -71,7 +87,6 @@ var IndexFunction = function(){
 				}
 			}
 		}
-
 		Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
 			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
 		}, function(err){
@@ -79,11 +94,25 @@ var IndexFunction = function(){
 		});
 	}
 
-	Index.getRandomSuggested = function(onSuccess, onError){
+	Index.getPublisherArtifacts = function(pubAddress, onSuccess, onError){
+		Index.getSupportedArtifacts(function(results){
+			var artifacts = [];
+
+			for (var i = 0; i < results.length; i++) {
+				if (Artifact.getPublisher(results[i]) === pubAddress){
+					artifacts.push(results[i]);
+				}
+			}
+
+			onSuccess(artifacts);
+		}
+	}
+
+	Index.getRandomSuggested = function(onSuccess){
 		Index.getSupportedArtifacts(function(results){
 			let randomArt = results.sort( function() { return 0.5 - Math.random() } ).slice(0,15);
 			onSuccess(randomArt);
-		}, onError);
+		});
 	}
 
 	Index.stripIndexData = function(artJson){

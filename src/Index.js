@@ -76,6 +76,18 @@ var IndexFunction = function(){
 		});
 	}
 
+	Index.getRegisteredRetailers = function(onSuccess, onError){
+		Network.getRetailersFromOIPd(function(jsonResult) {
+			onSuccess(jsonResult);
+		});
+	}
+
+	Index.getRegisteredPromoters = function(onSuccess, onError){
+		Network.getPromotersFromOIPd(function(jsonResult) {
+			onSuccess(jsonResult);
+		});
+	}
+
 	Index.getPublisher = function(id, onSuccess, onError){
 		if (localStorage.registeredPublishers){
 			var pubs = JSON.parse(localStorage.registeredPublishers).arr;
@@ -91,6 +103,34 @@ var IndexFunction = function(){
 			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
 		}, function(err){
 			onError(err);
+		});
+	}
+
+	Index.getRetailer = function(id, onSuccess, onError){
+		Network.getRetailersFromOIPd(function(retailers) {
+			for (var i = 0; i < retailers.length; i++) {
+				if (retailers[i] && retailers[i].txid){
+					if (retailers[i].txid === id){
+						onSuccess(retailers[i]);
+					}
+				}
+			}
+
+			onSuccess(undefined);
+		});
+	}
+
+	Index.getPromoter = function(id, onSuccess, onError){
+		Network.getRetailersFromOIPd(function(promoters) {
+			for (var i = 0; i < promoters.length; i++) {
+				if (promoters[i] && promoters[i].txid){
+					if (promoters[i].txid === id){
+						onSuccess(promoters[i]);
+					}
+				}
+			}
+
+			onSuccess(undefined);
 		});
 	}
 

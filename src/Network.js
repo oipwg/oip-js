@@ -10,10 +10,16 @@ var NetworkFunction = function(){
 
 	Network.cachedArtifacts = [];
 	Network.cachedPublishers = [];
+	Network.cachedPromoters = [];
+	Network.cachedRetailers = [];
 	Network.artifactsLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
 	Network.publishersLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
+	Network.promotersLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
+	Network.retailersLastUpdate = 0; // timestamp of last ajax call to the artifacts endpoint.
 	Network.artifactsUpdateTimelimit = 5 * 60 * 1000; // Five minutes
 	Network.publishersUpdateTimelimit = 5 * 60 * 1000; // Five minutes
+	Network.promotersUpdateTimelimit = 30 * 60 * 1000; // Thirty minutes
+	Network.retailersUpdateTimelimit = 5 * 60 * 60 * 1000; // Five hours
 	Network.cachedOIPdInfo = {};
 	Network.oipdInfoLastUpdate = 0; // timestamp of last ajax call to the info endpoint
 	Network.oipdInfoUpdateTimelimit = 5 * 60 * 1000; // Five minutes
@@ -114,6 +120,42 @@ var NetworkFunction = function(){
 			});
 		} else {
 			onSuccess(Network.cachedPublishers);
+		}
+	}
+
+	Network.getPromotersFromOIPd = function(onSuccess, onError){
+		if ((Date.now() - Network.promotersLastUpdate) > Network.promotersUpdateTimelimit){
+			axios.get(settings.OIPdURL + "/promoter/get/all", {
+				transformResponse: [function (data) {
+					return [...data]; 
+				}], responseType: 'json'
+			}).then( function(results){ 
+				Network.cachedPromoters = results.data;
+				Network.promotersLastUpdate = Date.now();
+				onSuccess(Network.cachedPromoters);
+			}).catch(function(error){
+				onError(error);
+			});
+		} else {
+			onSuccess(Network.cachedPromoters);
+		}
+	}
+
+	Network.getRetailersFromOIPd = function(onSuccess, onError){
+		if ((Date.now() - Network.retailersLastUpdate) > Network.retailersUpdateTimelimit){
+			axios.get(settings.OIPdURL + "/retailer/get/all", {
+				transformResponse: [function (data) {
+					return [...data]; 
+				}], responseType: 'json'
+			}).then( function(results){ 
+				Network.cachedRetailers = results.data;
+				Network.retailersLastUpdate = Date.now();
+				onSuccess(Network.cachedRetailers);
+			}).catch(function(error){
+				onError(error);
+			});
+		} else {
+			onSuccess(Network.cachedRetailers);
 		}
 	}
 

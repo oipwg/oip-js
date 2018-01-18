@@ -2,14 +2,18 @@ import EventEmitter from 'eventemitter3';
 import oipmw from 'oipmw';
 
 var WalletFunction = function(){
+	var Artifact = this.Artifact;
 	var Data = this.Data;
 	var Network = this.Network;
+	var Index = this.Index;
 
 	var Wallet = {}
 
 	Wallet.wallet; 
 	Wallet.devMode = false;
 	Wallet.emitter = new EventEmitter();
+	Wallet.activeRetailer = {};
+	Wallet.activePromoter = {};
 
 	Wallet.on = function(eventType, runMe){
 		if (!Wallet.emitter)
@@ -128,10 +132,10 @@ var WalletFunction = function(){
 		console.log("Sending TX Comment", options);
 		
 		var pubAddress = Wallet.wallet.getMainAddress('florincoin');
+
 		Wallet.wallet.payTo(pubAddress, pubAddress, 0.001, options, function(error, success){
-			console.log(success, error)
 			if (error){
-				console.error(error);
+				console.error("Error sending TX Comment!", error);
 				onError(error);
 			} else {
 				Wallet.wallet.store();
@@ -140,32 +144,96 @@ var WalletFunction = function(){
 				});
 				
 				onSuccess(success);
+				console.log("TX Comment sent successfully!", success)
 			}
 		})
 	}
 
-	Wallet.sendPayment = function(coin, fiat, fiat_amount, payTo, onSuccess, onError){
-		// payTo can be an array of addresses, if avaiable. If not, it will only be a string.
-		console.log(coin, fiat, fiat_amount, payTo);
+	Wallet.payForArtifact = function(artifact, file_number, purchase_type, onSuccess, onError){
+		var artifact_cost = Artifact.getFileCost(artifact, file_number, purchase_type);
+		var artifact_fiat = Artifact.getFiat(artifact);
+		var payment_supported_addresses = Artifact.getPaymentAddresses(artifact, file_number);
 
-		if (coin !== "florincoin"){
-			console.error("Attempting to send currency with " + coin + " will not calculte the correct USD value!!!");
-			return;
+		var supportedCoins = oipmw.Networks.listSupportedCoins();
+
+		var coin_exchange_rates = {};
+
+		var gotExchangeRate = function(fiat_per_coin, coin, fiat){
+			coin_exchange_rates[coin].status = "success";
+
+			coin_exchange_rates[coin][fiat] = {};
+			coin_exchange_rates[coin][fiat] = fiat_per_coin;
+		}
+		var exchangeRateError = function(coin, fiat){
+			coin_exchange_rates[coin].status = "error";
 		}
 
+		var finishProcessing = function(){
+			var can_process_with = {};
+
+			for (var coin in coin_exchange_rates){
+				if (coin_exchange_rates[coin] && coin_exchange_rates[coin].status){
+					if (coin_exchange_rates[coin].status === "success" && coin_exchange_rates[coin][artifact_fiat]){
+						if (coin_exchange_rates[coin][artifact_fiat] * artifact_cost >= Wallet.wallet.getBalance(coin)){
+							can_process_with[coin] = Wallet.wallet.getBalance(coin);
+						}
+					}
+				}
+			}
+
+			var coin_with_greatest_balance;
+
+			for (var coin in can_process_with){
+				if (!coin_with_greatest_balance){
+					coin_with_greatest_balance = coin;
+				} else if (can_process_with[coin] > can_process_with[coin_with_greatest_balance]) {
+					coin_with_greatest_balance = coin;
+				}
+			}
+
+			if (coin_with_greatest_balance){
+				Wallet.sendPayment(coin_with_greatest_balance, artifact_fiat, artifact_cost, payment_supported_addresses[coin_with_greatest_balance], onSuccess, onError);
+			} else {
+				onError("No coins with balance enough to pay!!!")
+			}
+		}
+
+		var continueIfDone = function(){
+			var done = true;
+			for (var coin in coin_exchange_rates){
+				if (coin_exchange_rates[coin] && coin_exchange_rates[coin].status && coin_exchange_rates[coin].status === "pending")
+					done = false;
+			}
+			if (done) {
+				finishProcessing();
+			}
+		}
+
+		for (var coin in supportedCoins){
+			var canPayWith = false;
+			for (var payCoin in payment_supported_addresses){
+				if (payCoin === payCoin){
+					canPayWith = true;
+				}
+			}
+
+			if (canPayWith){
+				coin_exchange_rates[supportedCoins[coin]] = {};
+				coin_exchange_rates[supportedCoins[coin]].status = "pending";
+				Data.getExchangeRate(artifact_fiat, supportedCoins[coin], gotExchangeRate, exchangeRateError)
+			}
+		}
+	}
+
+	Wallet.sendPayment = function(coin, fiat, fiat_amount, payTo, onSuccess, onError){
 		Data.getExchangeRate(coin, fiat, function(fiatPerCoin){
 			var paymentAmount = (fiat_amount / fiatPerCoin).toFixed(8);
 
 			console.log("From: " + coin + "\nTo: " + payTo + "\nAmount:" + paymentAmount + "\nFiat:" + fiat + " (" + fiat_amount + ")");
 
-			var options = {
-				//"txComment": "Hello from oip-mw :)"
-			};
-
 			Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), options, function(error, success){
-				console.log(success,error)
 				if (error){
-					console.error(error);
+					console.error("Error sending payment!!", error);
 					onError(error);
 				} else {
 					Wallet.wallet.store();
@@ -174,9 +242,10 @@ var WalletFunction = function(){
 					});
 					
 					onSuccess(success);
+					console.log("Payment sent successfully", success);
 				}
 			});
-		})
+		}, onError)
 	}
 
 	Wallet.createState = function(){
@@ -237,6 +306,28 @@ var WalletFunction = function(){
 		} else {
 			return true
 		}
+	}
+
+	Wallet.setActiveRetailer = function(id, onSuccess, onError){
+		Index.getRetailer(id, function(retailer){
+			Wallet.activeRetailer = retailer;
+			Wallet.activeRetailer.paymentAddresses = {
+				'florincoin': retailer["retailer-data"]['alexandria-retailer'].FLOaddress,
+				'bitcoin': retailer["retailer-data"]['alexandria-retailer'].BTCaddress
+			}
+			onSuccess(retailer);
+		}, onError)
+	}
+
+	Wallet.setActivePromoter = function(id, onSuccess, onError){
+		Index.getPromoter(id, function(promoter){
+			Wallet.activePromoter = promoter;
+			Wallet.activePromoter.paymentAddresses = {
+				'florincoin': promoter["promoter-data"]['alexandria-promoter'].FLOaddress,
+				'bitcoin': promoter["promoter-data"]['alexandria-promoter'].BTCaddress
+			}
+			onSuccess(promoter);
+		}, onError)
 	}
 
 	this.Wallet = Wallet;

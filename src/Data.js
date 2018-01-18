@@ -26,7 +26,9 @@ var DataFunction = function(){
 			if (fiat_type === fiat){
 				for (var coin_type in exchangeTypes[fiat_type]){
 					if (coin_type === coin){
-						exchangeTypes[fiat_type][coin_type].getExchangeRate(onSuccess, onError)
+						exchangeTypes[fiat_type][coin_type].getExchangeRate(function(success){
+							onSuccess(success, coin, fiat);
+						}, onError)
 					}
 				}
 			}

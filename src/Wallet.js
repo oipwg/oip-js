@@ -54,6 +54,10 @@ var WalletFunction = function(){
 		}
 	}
 
+	Wallet.newShortMWAddress = function(){
+		return Wallet.wallet.newShortMWAddress()
+	}
+
 	Wallet.checkDailyFaucet = function(flo_address, onSuccess, onError){
 		Network.checkDailyFaucet(flo_address, (res) => {
 			if (res.status === "ALREADY_RECEIVED_INTERVAL_FOR_NOW"){
@@ -175,7 +179,7 @@ var WalletFunction = function(){
 				if (coin_exchange_rates[coin] && coin_exchange_rates[coin].status){
 					if (coin_exchange_rates[coin].status === "success" && coin_exchange_rates[coin][artifact_fiat]){
 						if (coin_exchange_rates[coin][artifact_fiat] * artifact_cost >= Wallet.wallet.getBalance(coin)){
-							can_process_with[coin] = Wallet.wallet.getBalance(coin);
+							can_process_with[coin] = coin_exchange_rates[coin][artifact_fiat] * Wallet.wallet.getBalance(coin);
 						}
 					}
 				}
@@ -201,8 +205,9 @@ var WalletFunction = function(){
 		var continueIfDone = function(){
 			var done = true;
 			for (var coin in coin_exchange_rates){
-				if (coin_exchange_rates[coin] && coin_exchange_rates[coin].status && coin_exchange_rates[coin].status === "pending")
+				if (coin_exchange_rates[coin] && coin_exchange_rates[coin].status && coin_exchange_rates[coin].status === "pending"){
 					done = false;
+				}
 			}
 			if (done) {
 				finishProcessing();
@@ -223,6 +228,48 @@ var WalletFunction = function(){
 				Data.getExchangeRate(artifact_fiat, supportedCoins[coin], gotExchangeRate, exchangeRateError)
 			}
 		}
+	}
+
+	Wallet.sendPaymentMulti = function(coin, fiat, options, onSuccess, onError){
+		var outputs = options.outputs;
+
+		Data.getExchangeRate(coin, fiat, function(fiatPerCoin){
+			var coinOutputs = {};
+			var total_output_amount_fiat = 0;
+			var total_output_amount_coin = 0;
+
+			for (var output_address in outputs){
+				var output_amount_fiat = outputs[output_address];
+
+				total_output_amount_fiat += output_amount_fiat;
+
+				var paymentAmount = parseFloat((output_amount_fiat / fiatPerCoin).toFixed(8));
+
+				total_output_amount_coin += paymentAmount;
+				
+				coinOutputs[output_address] = paymentAmount;
+			}
+
+			options.outputs = coinOutputs;
+			options.q = true;
+
+			console.log("From: " + coin + "\nTo: " + outputs + "\nAmount:" + total_output_amount_coin + "\nFiat:" + fiat + " (" + total_output_amount_fiat + ")", options);
+
+			Wallet.wallet.payToMulti(coin, options, function(error, success){
+				if (error){
+					console.error("Error sending payment!!", error);
+					onError(error);
+				} else {
+					Wallet.wallet.store();
+					Wallet.createAndEmitState(() => {
+						Wallet.refresh();
+					});
+					
+					onSuccess(success);
+					console.log("Payment sent successfully", success);
+				}
+			});
+		}, onError)
 	}
 
 	Wallet.sendPayment = function(coin, fiat, fiat_amount, payTo, onSuccess, onError){

@@ -149,6 +149,30 @@ var ArtifactFunction = function(){
 		return mainFile;
 	}
 
+	Artifact.getFileCost = function(oip, file_number, purchase_type){
+		let fileCost;
+
+		let files = Artifact.getFiles(oip);
+
+		if (purchase_type === "buy"){
+			fileCost = files[file_number].sugBuy;
+		} else if (purchase_type === "play"){
+			fileCost = files[file_number].sugPlay;
+		}
+
+		return fileCost;
+	}
+
+	Artifact.getFiat = function(oip){
+		var fiat = "usd";
+
+		try {
+			fiat = oip['oip-041'].artifact.payment.fiat.toLowerCase();
+		} catch (e) {}
+
+		return fiat;
+	}
+
 	Artifact.getDuration = function(oip){
 		let duration;
 
@@ -246,17 +270,41 @@ var ArtifactFunction = function(){
 		return paid;
 	}
 
-	Artifact.getPaymentAddresses = function(oip, file){
-		let addrs = [];
+	Artifact.getPaymentAddresses = function(oip, file_num){
+		let addrs = {};
 
 		try {
-			addrs = oip['oip-041'].artifact.payment.addresses;
+			if (file_num && oip && oip.oip042 && oip.oip042.artifact.storage && oip.oip042.artifact.storage.files[file_num] && oip.oip042.artifact.storage.files[file_num].shortMW){
+				addrs = { 'shortMW': oip.oip042.artifact.storage.files[file_num].shortMW }
+			} else {
+				addrs = oip['oip-041'].artifact.payment.addresses;
+			}
 
-			if (addrs.length === 0)
-				addrs = {'florincoin': Artifact.getPublisher(oip)};
+			if (addrs === {})
+				addrs.florincoin = Artifact.getPublisher(oip);
 		} catch (e) {}
 
 		return addrs;
+	}
+
+	Artifact.getRetailerCut = function(oip, file_num){
+		var retailerCut = 0;
+
+		try {
+			retailerCut = oip['oip-041'].artifact.payment.retailer
+		} catch (e) {}
+
+		return retailerCut
+	}
+
+	Artifact.getPromoterCut = function(oip, file_num){
+		var promoterCut = 0;
+
+		try {
+			promoterCut = oip['oip-041'].artifact.payment.promoter
+		} catch (e) {}
+
+		return promoterCut
 	}
 
 	this.Artifact = Artifact;

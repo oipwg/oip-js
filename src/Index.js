@@ -108,29 +108,39 @@ var IndexFunction = function(){
 
 	Index.getRetailer = function(id, onSuccess, onError){
 		Network.getRetailersFromOIPd(function(retailers) {
+			var success = false;
+
 			for (var i = 0; i < retailers.length; i++) {
 				if (retailers[i] && retailers[i].txid){
 					if (retailers[i].txid === id){
+						success = true;
 						onSuccess(retailers[i]);
 					}
 				}
 			}
-
-			onSuccess(undefined);
+			
+			if (!success){
+				onError("No Retailer Found");
+			}
 		});
 	}
 
 	Index.getPromoter = function(id, onSuccess, onError){
 		Network.getRetailersFromOIPd(function(promoters) {
+			var success = false;
+
 			for (var i = 0; i < promoters.length; i++) {
 				if (promoters[i] && promoters[i].txid){
 					if (promoters[i].txid === id){
+						success = true;
 						onSuccess(promoters[i]);
 					}
 				}
 			}
 
-			onSuccess(undefined);
+			if (!success){
+				onError("No Promoter Found");
+			}
 		});
 	}
 
@@ -145,7 +155,7 @@ var IndexFunction = function(){
 			}
 
 			onSuccess(artifacts);
-		}
+		}, onError)
 	}
 
 	Index.getRandomSuggested = function(onSuccess){

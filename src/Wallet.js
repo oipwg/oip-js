@@ -157,6 +157,8 @@ var WalletFunction = function(){
 		var artifact_cost = Artifact.getFileCost(artifact, file_number, purchase_type);
 		var artifact_fiat = Artifact.getFiat(artifact);
 		var payment_supported_addresses = Artifact.getPaymentAddresses(artifact, file_number);
+		var artifact_retailer_cut = Artifact.getRetailerCut(artifact, file_number);
+		var artifact_promoter_cut = Artifact.getPromoterCut(artifact, file_number);
 
 		var supportedCoins = oipmw.Networks.listSupportedCoins();
 
@@ -196,7 +198,26 @@ var WalletFunction = function(){
 			}
 
 			if (coin_with_greatest_balance){
-				Wallet.sendPayment(coin_with_greatest_balance, artifact_fiat, artifact_cost, payment_supported_addresses[coin_with_greatest_balance], onSuccess, onError);
+				var outputs = {};
+				var artist_percentage = 100;
+
+				if (Wallet.activeRetailer){
+					artist_percentage -= artifact_retailer_cut;
+
+					var retailerAddress = Wallet.activeRetailer.paymentAddresses[coin_with_greatest_balance];
+					outputs[retailerAddress] = artifact_cost * (artifact_retailer_cut / 100);
+				}
+
+				if (Wallet.activePromoter){
+					artist_percentage -= artifact_promoter_cut;
+
+					var promoterAddress = Wallet.activePromoter.paymentAddresses[coin_with_greatest_balance];
+					outputs[promoterAddress] = artifact_cost * (artifact_promoter_cut / 100);
+				}
+
+				outputs[payment_supported_addresses[coin_with_greatest_balance]] = artifact_cost * (artist_percentage / 100);
+
+				Wallet.sendPaymentMulti(coin_with_greatest_balance, artifact_fiat, outputs, onSuccess, onError);
 			} else {
 				onError("No coins with balance enough to pay!!!")
 			}

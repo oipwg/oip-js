@@ -248,7 +248,7 @@ var ArtifactFunction = function(){
 	}
 
 	Artifact.paid = function(oip){
-		let files = oip['oip-041'].artifact.storage.files;
+		let files = Artifact.getFiles(oip);
 
 		let paid = false;
 		if (files){

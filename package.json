@@ -1,10 +1,12 @@
 {
   "name": "oip-js",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "The core module of OIP written in Javascript!",
-  "main": "index.js",
+  "main": "lib/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "compile": "./node_modules/.bin/babel --presets es2015 -d lib/ src/",
+    "prepublish": "npm run compile",
     "browserify": "browserify browserify.js --standalone OIPJS -o demo/OIPJS-browserify.js -t [ babelify --presets [ es2015 ] ]"
   },
   "repository": {
@@ -30,8 +32,7 @@
     "rfc6902": "^2.2.2"
   },
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
+    "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
     "babelify": "^8.0.0"
   }

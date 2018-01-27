@@ -1,3 +1,3 @@
-import OIPJS from './index.js';
+import OIPJS from './src/main.js';
 
 module.exports = OIPJS;

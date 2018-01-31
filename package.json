@@ -1,6 +1,6 @@
 {
   "name": "oip-js",
-  "version": "1.0.11",
+  "version": "1.0.13",
   "description": "The core module of OIP written in Javascript!",
   "main": "lib/main.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "crypto-js": "^3.1.9-1",
     "eventemitter3": "^2.0.3",
     "ipfs": "git+https://github.com/ipfs/js-ipfs.git",
-    "oipmw": "git+https://github.com/oipwg/oipmw.git",
+    "oipmw": "^0.0.2",
     "qs": "^6.5.1",
     "rfc6902": "^2.2.2"
   },

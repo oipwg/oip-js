@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "./node_modules/.bin/babel --presets es2015 -d lib/ src/",
     "prepublish": "npm run compile",
-    "browserify": "browserify browserify.js --standalone OIPJS -o demo/OIPJS-browserify.js -t [ babelify --presets [ es2015 ] ]"
+    "browserify": "browserify browserify.js --standalone OIPJS -o demo/browser/OIPJS-browserify.js -t [ babelify --presets [ es2015 ] ]"
   },
   "repository": {
     "type": "git",

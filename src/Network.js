@@ -1,6 +1,7 @@
 import axios from 'axios';
 import qs from 'qs';
 import IPFS_MAIN from 'ipfs';
+import ipfsAPI from 'ipfs-api';
 
 var NetworkFunction = function(){
 	var settings = this.settings;
@@ -38,6 +39,11 @@ var NetworkFunction = function(){
 		Network.ipfs = new IPFS_MAIN(settings.ipfsConfig);
 	} catch (e) {
 		Network.ipfs = "not-supported"
+	}
+	try {
+		Network.ipfsAPI = new ipfsAPI(settings.ipfsAPIConfig);
+	} catch (e) {
+		Network.ipfsAPI = "not-supported"
 	}
 
 	Network.getLatestOIPdInfo = function(onSuccess, onError){

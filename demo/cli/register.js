@@ -1,4 +1,4 @@
-var OIPJS = require('../../lib/main.js');
+var OIPJS = require('../../lib/babel.js');
 
 var email = 'exampleuser@alexandria.io';
 var password = 'ExampleUserPa55w0rd';

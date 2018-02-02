@@ -1,11 +1,7 @@
-if (typeof localStorage === "undefined" || localStorage === null) {
-  var LocalStorage = require('node-localstorage').LocalStorage;
-  localStorage = new LocalStorage('./scratch');
-}
-
 var IndexFunction = function(){
 	var Artifact = this.Artifact;
 	var Network = this.Network;
+	var LocStorage = this.localStorage;
 
 	var Index = {};
 
@@ -68,8 +64,8 @@ var IndexFunction = function(){
 
 	Index.getRegisteredPublishers = function(onSuccess, onError){
 		var pubs = [];
-		if (localStorage.registeredPublishers){
-			pubs = JSON.parse(localStorage.registeredPublishers).arr;
+		if (LocStorage.registeredPublishers){
+			pubs = JSON.parse(LocStorage.registeredPublishers).arr;
 		}
 
 		Network.getPublishersFromOIPd(function(jsonResult) {
@@ -94,8 +90,8 @@ var IndexFunction = function(){
 	}
 
 	Index.getPublisher = function(id, onSuccess, onError){
-		if (localStorage.registeredPublishers){
-			var pubs = JSON.parse(localStorage.registeredPublishers).arr;
+		if (LocStorage.registeredPublishers){
+			var pubs = JSON.parse(LocStorage.registeredPublishers).arr;
 
 			for (var pub of pubs){
 				if (pub.address === id){

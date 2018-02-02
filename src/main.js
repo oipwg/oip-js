@@ -10,9 +10,15 @@ import OIPd from './OIPd.js';
 import Publisher from './Publisher.js';
 import Comments from './Comments.js';
 
+if (typeof localStorage === "undefined" || localStorage === null) {
+  var LocalStorage = require('node-localstorage').LocalStorage;
+  var localStorage = new LocalStorage('./scratch');
+}
+
 var OIPJS = function(){
 	var Core = {};
 
+	Core.localStorage = localStorage;
 	Core.settings = settings.bind(Core)();
 	Core.util = util.bind(Core)();
 	Core.Artifact = Artifact.bind(Core)();

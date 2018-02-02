@@ -1,6 +1,8 @@
 var PublisherFunction = function(){
 	var OIPd = this.OIPd;
 	var User = this.User;
+	var LocStorage = this.localStorage;
+	
 	var Publisher = {};
 
 	Publisher.Register = function(username, address, email, onSuccess, onError){
@@ -10,7 +12,7 @@ var PublisherFunction = function(){
 			var registeredPublishers;
 
 			try {
-				registeredPublishers = JSON.parse(localStorage.registeredPublishers);
+				registeredPublishers = JSON.parse(LocStorage.registeredPublishers);
 			} catch (e) {}
 
 			if (!registeredPublishers)
@@ -18,7 +20,7 @@ var PublisherFunction = function(){
 
 			registeredPublishers.arr.push(publisher);
 
-			localStorage.registeredPublishers = JSON.stringify(registeredPublishers);
+			LocStorage.registeredPublishers = JSON.stringify(registeredPublishers);
 
 			onSuccess(publisher);
 		}, function(error){

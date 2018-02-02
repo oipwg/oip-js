@@ -49,7 +49,7 @@ var settingsFunction = function(){
 		},
 		ipfsAPIConfig: {
 			host: 'ipfs-one.alexandria.io', 
-			port: '9094', 
+			port: '9095', 
 			protocol: 'http'
 		}
 	}

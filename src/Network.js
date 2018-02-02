@@ -41,7 +41,7 @@ var NetworkFunction = function(){
 		Network.ipfs = "not-supported"
 	}
 	try {
-		Network.ipfsAPI = new ipfsAPI(settings.ipfsAPIConfig);
+		Network.ipfsAPI = ipfsAPI(settings.ipfsAPIConfig);
 	} catch (e) {
 		Network.ipfsAPI = "not-supported"
 	}
@@ -341,6 +341,24 @@ var NetworkFunction = function(){
 				onComplete(util.buildIPFSURL(hash), hash);
 			}
 		}, 2 * 1000)
+	}
+
+	Network.ipfsAPIAdd = function(data, options, callback){
+		if (!options) {
+			options = {}
+		}
+
+		options.qs = { w: null, pin: true }
+
+		Network.ipfsAPI.files.add(data, options, function(error, success){
+			if (error) {
+				callback(error, success);
+			} else {
+				var folderHash = success[success.length - 1].hash;
+
+				callback(error, folderHash, success)
+			}
+		});
 	}
 
 	Network.getCommentsFromISSO = function(uri, callback){

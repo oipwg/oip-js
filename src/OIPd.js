@@ -164,17 +164,22 @@ var OIPdFunction = function(){
 			publishFee = undefined;
 		}
 
-		OIPd.sendToBlockChain(JSON.stringify(jsonData), publishFee, onSuccess, onError);
+
+		console.groupCollapsed("Publish JSON to Flo")
+		OIPd.sendToBlockChain(JSON.stringify(jsonData), publishFee, (success) => {
+			console.groupEnd()
+			onSuccess(success);
+		}, (error) => {
+			console.groupEnd()
+			onError(error);
+		});
 	};
 
 	OIPd.sendToBlockChain = function (txComment, publishFee, onSuccess, onError) {
 		// over sized?
-		if (txComment.length > (OIPd.CHOP_MAX_LEN * 10)) {
-			callback("txComment is too large to fit within 10 multipart transactions. try making it smaller!");
-		} else if (txComment.length > OIPd.TXCOMMENT_MAX_LEN) {
+		if (txComment.length > OIPd.TXCOMMENT_MAX_LEN) {
 			OIPd.multiPart(txComment, publishFee, onSuccess, onError);
-		}
-		else {
+		} else {
 			OIPd.sendTX(txComment, publishFee, onSuccess, onError);
 		}
 	};

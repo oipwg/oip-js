@@ -5,7 +5,7 @@ var DataFunction = function(){
 
 	Data.getExchangeRate = function(coin, fiat, onSuccess, onError){
 		if (coin === fiat){
-			return callback(1);
+			return onSuccess(1);
 		}
 
 		var exchangeTypes = {

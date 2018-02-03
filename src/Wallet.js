@@ -307,6 +307,8 @@ var WalletFunction = function(){
 			console.groupCollapsed("Send Payment")
 			console.log("From: " + coin + "\nTo: " + payTo + "\nAmount:" + paymentAmount + "\nFiat:" + fiat + " (" + fiat_amount + ")");
 
+			var options = {}
+
 			Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), options, function(error, success){
 				if (error){
 					console.groupEnd();

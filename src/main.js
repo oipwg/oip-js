@@ -10,9 +10,11 @@ import OIPd from './OIPd.js';
 import Publisher from './Publisher.js';
 import Comments from './Comments.js';
 
-if (typeof localStorage === "undefined" || localStorage === null) {
+if ((typeof localStorage === "undefined" || localStorage === null) && typeof window === 'undefined') {
   var LocalStorage = require('node-localstorage').LocalStorage;
   var localStorage = new LocalStorage('./scratch');
+} else {
+	var localStorage = window.localStorage;
 }
 
 var OIPJS = function(){

@@ -18,7 +18,6 @@ var IndexFunction = function(){
 		// In the future we will generate content specific for users, for now, just the generic is ok :)
 		// userid is not currently implemented or used.
 		Index.getSupportedArtifacts(function(supportedArtifacts){
-			console.log(supportedArtifacts)
 			if (supportedArtifacts.length > 25){
 				callback(supportedArtifacts.slice(0,25));
 			} else {

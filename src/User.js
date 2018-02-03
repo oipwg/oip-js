@@ -24,7 +24,6 @@ var UserFunction = function(){
 
 		Wallet.Login(identifier, password, (state) => {
 			User.isLoggedIn = true;
-			console.log(state);
 			// If we have florincoin addresses
 			if (state.florincoin){
 				if (state.florincoin.mainAddress){

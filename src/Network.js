@@ -419,7 +419,6 @@ var NetworkFunction = function(){
 		}
 
 		axios.post(settings.faucetURL + "/request", qs.stringify(data)).then(function(response){
-			console.log(response);
 			var res = response.data;
 
 			if (res.success){
@@ -441,7 +440,6 @@ var NetworkFunction = function(){
 		}
 
 		axios.post(settings.faucetURL + "/check", qs.stringify(data)).then(function(response){
-			console.log(response);
 			var res = response.data;
 
 			onSuccess(res);

@@ -133,12 +133,14 @@ var WalletFunction = function(){
 	}
 
 	Wallet.sendTxComment = function(options, onSuccess, onError){
+		console.groupCollapsed("Send TX Comment")
 		console.log("Sending TX Comment", options);
 		
 		var pubAddress = Wallet.wallet.getMainAddress('florincoin');
 
 		Wallet.wallet.payTo(pubAddress, pubAddress, 0.001, options, function(error, success){
 			if (error){
+				console.groupEnd();
 				console.error("Error sending TX Comment!", error);
 				onError(error);
 			} else {
@@ -147,8 +149,10 @@ var WalletFunction = function(){
 					Wallet.refresh();
 				});
 				
-				onSuccess(success);
 				console.log("TX Comment sent successfully!", success)
+				console.groupEnd()
+
+				onSuccess(success);
 			}
 		})
 	}
@@ -274,10 +278,12 @@ var WalletFunction = function(){
 			options.outputs = coinOutputs;
 			options.q = true;
 
+			console.groupCollapsed("Send MultiPayment")
 			console.log("From: " + coin + "\nTo: " + outputs + "\nAmount:" + total_output_amount_coin + "\nFiat:" + fiat + " (" + total_output_amount_fiat + ")", options);
 
 			Wallet.wallet.payToMulti(coin, options, function(error, success){
 				if (error){
+					console.groupEnd();
 					console.error("Error sending payment!!", error);
 					onError(error);
 				} else {
@@ -286,8 +292,9 @@ var WalletFunction = function(){
 						Wallet.refresh();
 					});
 					
-					onSuccess(success);
 					console.log("Payment sent successfully", success);
+					console.groupEnd();
+					onSuccess(success);
 				}
 			});
 		}, onError)
@@ -297,10 +304,12 @@ var WalletFunction = function(){
 		Data.getExchangeRate(coin, fiat, function(fiatPerCoin){
 			var paymentAmount = (fiat_amount / fiatPerCoin).toFixed(8);
 
+			console.groupCollapsed("Send Payment")
 			console.log("From: " + coin + "\nTo: " + payTo + "\nAmount:" + paymentAmount + "\nFiat:" + fiat + " (" + fiat_amount + ")");
 
 			Wallet.wallet.payTo(coin, payTo, parseFloat(paymentAmount), options, function(error, success){
 				if (error){
+					console.groupEnd();
 					console.error("Error sending payment!!", error);
 					onError(error);
 				} else {
@@ -308,9 +317,11 @@ var WalletFunction = function(){
 					Wallet.createAndEmitState(() => {
 						Wallet.refresh();
 					});
+
+					console.log("Payment sent successfully", success);
+					console.groupEnd();
 					
 					onSuccess(success);
-					console.log("Payment sent successfully", success);
 				}
 			});
 		}, onError)
@@ -359,7 +370,9 @@ var WalletFunction = function(){
 			}
 		}
 
-		console.log("Created State!", state);
+		console.groupCollapsed("OIPJS Wallet Balance Update")
+		console.log("New State:", state);
+		console.groupEnd()
 
 		return state;
 	}

@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 var utilFunction = function(){
 	var settings = this.settings;
 
@@ -15,6 +17,10 @@ var utilFunction = function(){
 		if (chunks) {
 			reader.readAsDataURL(new Blob(chunks));
 		}
+	}
+
+	util.bufferFromArray = function(input){
+		return Buffer.from(input)
 	}
 
 	util.buildIPFSShortURL = function(location, file){

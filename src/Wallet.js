@@ -413,6 +413,16 @@ var WalletFunction = function(){
 		}, onError)
 	}
 
+	Wallet.stripStxoStore = function(){
+		for (var key of Wallet.wallet.keys){
+			for (var coin in key.coins){
+				key.coins[coin].stxo = [];
+				key.coins[coin].utxo = [];
+			}
+		}
+		Wallet.wallet.store();
+	}
+
 	this.Wallet = Wallet;
 
 	return this.Wallet;

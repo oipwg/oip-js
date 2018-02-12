@@ -48,9 +48,16 @@ var settingsFunction = function(){
 			}
 		},
 		ipfsAPIConfig: {
-			host: 'ipfs-one.alexandria.io', 
-			port: '9095', 
-			protocol: 'http'
+			uploadNode: {
+				host: 'ipfs.alexandria.io', 
+				port: '443', 
+				protocol: 'https'
+			},
+			clusterNode: {
+				host: 'ipfs-one.alexandria.io', 
+				port: '9095', 
+				protocol: 'http'
+			}
 		}
 	}
 

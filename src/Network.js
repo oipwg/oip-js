@@ -41,9 +41,14 @@ var NetworkFunction = function(){
 		Network.ipfs = "not-supported"
 	}
 	try {
-		Network.ipfsAPI = ipfsAPI(settings.ipfsAPIConfig);
+		Network.ipfsUploadAPI = ipfsAPI(settings.ipfsAPIConfig.uploadNode);
 	} catch (e) {
-		Network.ipfsAPI = "not-supported"
+		Network.ipfsUploadAPI = "not-supported"
+	}
+	try {
+		Network.ipfsClusterAPI = ipfsAPI(settings.ipfsAPIConfig.clusterNode);
+	} catch (e) {
+		Network.ipfsClusterAPI = "not-supported"
 	}
 
 	Network.getLatestOIPdInfo = function(onSuccess, onError){
@@ -350,15 +355,30 @@ var NetworkFunction = function(){
 
 		options.qs = { w: null, pin: true }
 
-		Network.ipfsAPI.files.add(data, options, function(error, success){
+		Network.ipfsUploadAPI.files.add(data, options, function(error, success){
 			if (error) {
 				callback(error, success);
 			} else {
 				var folderHash = success[success.length - 1].hash;
 
+				// try {
+				// 	Network.ipfsAPIPin(folderHash, function(pinError, pinSuccess){
+				// 		callback(pinError, folderHash, success, pinSuccess);
+				// 	})
+				// } catch (e) {
+				// 	callback(error, folderHash, success, "Pin Signalled Error, may have succeeded successfully anyways.")
+				// }
 				callback(error, folderHash, success)
 			}
 		});
+	}
+
+	Network.ipfsAPIPin = function(hash, callback){
+		var options = {
+			mode: "no-cors",
+			recursive: true
+		}
+		Network.ipfsClusterAPI.pin.add(hash, options, callback);
 	}
 
 	Network.getCommentsFromISSO = function(uri, callback){

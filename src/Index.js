@@ -43,11 +43,17 @@ var IndexFunction = function(){
 
 	Index.getArtifactFromID = function(id, onSuccess, onError){
 		Index.getSupportedArtifacts(function(supportedArtifacts){
+			var found = false;
+
 			for (var i = 0; i < supportedArtifacts.length; i++) {
 				if (supportedArtifacts[i].txid.substr(0, id.length) === id){
+					found = true;
 					onSuccess([...[supportedArtifacts[i]]][0]);
 				}
 			}
+
+			if (!found)
+				onError("No Artifact found for ID");
 		}, onError)
 	}
 
@@ -92,13 +98,19 @@ var IndexFunction = function(){
 		if (LocStorage.registeredPublishers){
 			var pubs = JSON.parse(LocStorage.registeredPublishers).arr;
 
+			var found = false;
+
 			for (var pub of pubs){
-				if (pub.address === id){
+				if (pub.address.substr(0, id.length) === id){
+					found = true;
 					onSuccess(pub);
-					return;
 				}
 			}
+
+			if (!found)
+				onError("No Publisher found for ID!");
 		}
+		
 		Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
 			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
 		}, function(err){

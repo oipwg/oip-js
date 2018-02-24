@@ -23,7 +23,6 @@ var OIPdFunction = function(){
 
 	// returns signature directly
 	OIPd.signArtifact = function (ipfs, address, time) {
-		// http://api.alexandria.io/#sign-publisher-announcement-message
 		var toSign = ipfs + "-" + address + "-" + time;
 
 		return Wallet.wallet.signMessage(address, toSign);
@@ -31,14 +30,12 @@ var OIPdFunction = function(){
 
 	// returns signature directly
 	OIPd.signArtifactDeactivation = function (txid, publisher, timestamp) {
-		// https://api.alexandria.io/docs/#sign-an-artifact-deactivation-message
 		var toSign = txid + "-" + publisher + "-" + timestamp;
 
 		return Wallet.signMessage(publisher, toSign);
 	};
 
 	OIPd.signArtifactEdit = function (txid, timestamp) {
-		// https://api.alexandria.io/docs/#sign-an-artifact-deactivation-message
 		var publisher = Wallet.getMainAddress('florincoin');
 
 		var toSign = txid + "-" + publisher + "-" + timestamp;

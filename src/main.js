@@ -17,11 +17,11 @@ if ((typeof localStorage === "undefined" || localStorage === null) && typeof win
 	var localStorage = window.localStorage;
 }
 
-var OIPJS = function(){
+var OIPJS = function(userSettings){
 	var Core = {};
 
 	Core.localStorage = localStorage;
-	Core.settings = settings.bind(Core)();
+	Core.settings = settings.bind(Core)(userSettings);
 	Core.util = util.bind(Core)();
 	Core.Artifact = Artifact.bind(Core)();
 	Core.Network = Network.bind(Core)();
@@ -36,4 +36,4 @@ var OIPJS = function(){
 	return Core;
 };
 
-export default OIPJS();
+export default OIPJS;

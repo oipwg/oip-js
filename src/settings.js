@@ -1,5 +1,11 @@
-var settingsFunction = function(){
+var settingsFunction = function(userSettings){
+	if (!userSettings)
+		userSettings = {};
+
 	var settings = {
+		runIPFSJS: false,
+		runIPFSAPIUpload: true,
+		runIPFSAPICluster: true,
 		OIPdURL: "https://api.alexandria.io/alexandria/v2",
 		IPFSGatewayURL: "https://gateway.ipfs.io/ipfs/",
 		issoURL: "https://isso.alexandria.io/",
@@ -61,7 +67,8 @@ var settingsFunction = function(){
 		}
 	}
 
-	this.settings = settings;
+	this.settings = Object.assign({}, settings, userSettings);
+	
 	return this.settings;
 }
 

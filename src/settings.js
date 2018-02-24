@@ -13,6 +13,7 @@ var settingsFunction = function(userSettings){
 		floTickerURL: "https://api.alexandria.io/flo-market-data/v1/getAll",
 		ltcTickerURL: "https://api.coinmarketcap.com/v1/ticker/litecoin/",
 		faucetURL: "https://api.alexandria.io/faucet",
+		postFlorinsightTxURL: "https://florinsight.alexandria.io/api/tx/send",
 		ipfsConfig: {
 			init: true,
 			start: true,

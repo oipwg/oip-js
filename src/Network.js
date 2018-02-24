@@ -444,13 +444,21 @@ var NetworkFunction = function(){
 			if (res.success){
 				var txinfo = res.info;
 
-				onSuccess(txinfo);
+				Network.postRawTransactionToFlorinsight(txinfo.hex, function(success){
+					onSuccess(txinfo)
+				}, function(err){
+					onError(err, response)
+				})
 			} else {
 				onError(res, response);
 			}
 		}).catch(function(error){
 			console.error(error)
 		})
+	}
+
+	Network.postRawTransactionToFlorinsight = function(rawtx, onSuccess, onError){
+		axios.post(settings.postFlorinsightTxURL, {"rawtx": rawtx}).then(onSuccess).catch(onError);
 	}
 
 	Network.checkDailyFaucet = function(flo_address, onSuccess, onError){

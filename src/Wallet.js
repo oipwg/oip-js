@@ -71,12 +71,6 @@ var WalletFunction = function(){
 	}
 
 	Wallet.tryOneTimeFaucet = function(flo_address, recaptcha, onSuccess, onError){
-		if (typeof recaptcha === "function"){
-			onError = onSuccess;
-			onSuccess = recaptcha;
-			recaptcha = undefined;
-		}
-
 		Network.tryOneTimeFaucet(flo_address, recaptcha, function(txinfo){
 			Wallet.wallet.addUnconfirmedRawTransaction(txinfo);
 			Wallet.createAndEmitState(function(success){
@@ -89,12 +83,6 @@ var WalletFunction = function(){
 	}
 
 	Wallet.tryDailyFaucet = function(flo_address, recaptcha, onSuccess, onError){
-		if (typeof recaptcha === "function"){
-			onError = onSuccess;
-			onSuccess = recaptcha;
-			recaptcha = undefined;
-		}
-		
 		Network.tryDailyFaucet(flo_address, recaptcha, function(txinfo){
 			Wallet.wallet.addUnconfirmedRawTransaction(txinfo);
 			Wallet.createAndEmitState(function(success){

@@ -255,7 +255,7 @@ var IndexFunction = function(){
 
 	Index.getRandomSuggested = function(onSuccess){
 		Index.getSupportedArtifacts(function(results){
-			let randomArt = results.sort( function() { return 0.5 - Math.random() } ).slice(0,15);
+			let randomArt = [...results].sort( function() { return 0.5 - Math.random() } ).slice(0,15);
 			onSuccess(randomArt);
 		});
 	}

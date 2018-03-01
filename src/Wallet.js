@@ -6,6 +6,7 @@ var WalletFunction = function(){
 	var Data = this.Data;
 	var Network = this.Network;
 	var Index = this.Index;
+	var settings = this.settings;
 
 	var Wallet = {}
 
@@ -25,14 +26,15 @@ var WalletFunction = function(){
 	Wallet.Create = function(email, password, onSuccess, onError){
 		oipmw.createNewWallet({
 			email: email,
-			password: password
+			password: password,
+			extraOpts: { "walletKeystoreURL": settings.keystoreServerURL }
 		}).then((wallet) => {
 			Wallet.Login(wallet.identifier, password, onSuccess, onError);
 		}).catch(onError);
 	}
 
 	Wallet.Login = function(identifier, password, onSuccess, onError){
-		Wallet.wallet = new oipmw.Wallet(identifier, password);
+		Wallet.wallet = new oipmw.Wallet(identifier, password, undefined, { "walletKeystoreURL": settings.keystoreServerURL });
 
 		Wallet.wallet.load().then(() => {
 		   		Wallet.refresh(onSuccess, onError);

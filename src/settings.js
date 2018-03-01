@@ -14,6 +14,7 @@ var settingsFunction = function(userSettings){
 		ltcTickerURL: "https://api.coinmarketcap.com/v1/ticker/litecoin/",
 		faucetURL: "https://api.alexandria.io/faucet",
 		postFlorinsightTxURL: "https://florinsight.alexandria.io/api/tx/send",
+		keystoreServerURL: "https://flovault.alexandria.io/wallet/",
 		ipfsConfig: {
 			init: true,
 			start: true,

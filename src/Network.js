@@ -101,9 +101,7 @@ var NetworkFunction = function(){
 	Network.getArtifactsFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.artifactsLastUpdate) > Network.artifactsUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/media/get/all", {
-				transformResponse: [function (data) {
-					return [...data]; 
-				}], responseType: 'json'
+				responseType: 'json'
 			}).then( function(results){ 
 				Network.cachedArtifacts = results.data;
 				Network.artifactsLastUpdate = Date.now();

@@ -1,17 +1,59 @@
+const low = require('lowdb')
+const Memory = require('lowdb/adapters/Memory')
+var _ = require('lodash')
+
 var IndexFunction = function(){
 	var Artifact = this.Artifact;
 	var Network = this.Network;
 	var LocStorage = this.localStorage;
+	var settings = this.settings;
 
 	var Index = {};
 
-	Index.supportedArtifacts = [];
+	Index.db = low(new Memory())
+
+	Index.db.defaults({ 
+		AllArtifacts: [],
+		SupportedArtifacts: [],
+		Publishers: [],
+		Retailers: [],
+		Promoters: [],
+		Autominers: [],
+		AutominerPools: [],
+		shortHashToLong: []
+	}).write()
+
+	Index.addToDb = function(dbObject, insertObject){
+		var addToList = function(dbObj, insObj){
+			var exists = Index.db.get(dbObj).find({ txid: insObj.txid }).value();
+
+			if (!exists){
+				return Index.db.get(dbObj).push(insObj).write();
+			}
+		}
+
+		if (Array.isArray(insertObject)){
+			for (var ins of insertObject){
+				addToList(dbObject, ins);
+			}
+		} else {
+			return addToList(dbObject, insertObject);
+		}
+	}
 
 	Index.getSupportedArtifacts = function(onSuccess, onError){
-		Network.getArtifactsFromOIPd(function(jsonResult) {
-			let filtered = Index.stripUnsupported(jsonResult);
-			onSuccess([...filtered]);
-		}, onError);
+		var SupportedArtifactList = Index.db.get("SupportedArtifacts").value();
+
+		if (SupportedArtifactList.length < 50){
+			Network.getArtifactsFromOIPd(function(jsonResult) {
+				let supported = Index.stripUnsupported(jsonResult);
+				let filtered = Index.filterArtifacts(supported);
+
+				onSuccess([...filtered]);
+			}, onError);
+		} else {
+			onSuccess(SupportedArtifactList)
+		}
 	}
 
 	Index.getSuggestedContent = function(userid, callback){
@@ -32,8 +74,8 @@ var IndexFunction = function(){
 		for (var x = artifacts.length -1; x >= 0; x--){
 			if (artifacts[x]['oip-041']){
 				if (artifacts[x]['oip-041'].artifact.type.split('-').length === 2){
-					if (!artifacts[x]['oip-041'].artifact.info.nsfw)
-						supportedArtifacts.push(JSON.parse(JSON.stringify(artifacts[x])));
+					if (artifacts[x]['oip-041'].artifact.type !== "Property")
+						supportedArtifacts.push(artifacts[x]);
 				}
 			}
 		}   
@@ -41,27 +83,64 @@ var IndexFunction = function(){
 		return [...supportedArtifacts];
 	}
 
-	Index.getArtifactFromID = function(id, onSuccess, onError){
-		Index.getSupportedArtifacts(function(supportedArtifacts){
-			var found = false;
+	Index.filterArtifacts = function(artifacts){
+		var filteredArtifacts = artifacts;
 
-			for (var i = 0; i < supportedArtifacts.length; i++) {
-				if (supportedArtifacts[i].txid.substr(0, id.length) === id){
-					found = true;
-					onSuccess([...[supportedArtifacts[i]]][0]);
-				}
+		if (Array.isArray(settings.artifactFilters)){
+			for (var filter of settings.artifactFilters){
+				filteredArtifacts = _.filter(filteredArtifacts, filter)
 			}
+		} else {
+			filteredArtifacts = _.filter(filteredArtifacts, settings.artifactFilters)
+		}
 
-			if (!found)
-				onError("No Artifact found for ID");
-		}, onError)
+		for (var i in filteredArtifacts){
+			filteredArtifacts[i].short = filteredArtifacts[i].txid.substr(0,6)
+		}
+
+		Index.addToDb("SupportedArtifacts", filteredArtifacts)
+
+		return [...filteredArtifacts];
+	}
+
+	Index.getArtifactFromID = function(id, onSuccess, onError){
+		var short = false;
+
+		if (id.length < 11){
+			short = true;
+		}
+
+		var filter = {};
+
+		filter[short ? "short" : "txid"] = id;
+
+		var artifactInDb = Index.db.get("SupportedArtifacts").find(filter).value();
+
+		if (!artifactInDb) {
+			Index.search({"protocol": "media", "search-on": "txid", "search-for": id}, function(results){
+				if (results.length === 0){
+					onError("Artifact Not Found")
+				} else {
+					onSuccess(results[0]);
+				}
+			}, function(err){
+				onError(err);
+			});
+		} else {
+			onSuccess(artifactInDb);
+		}
 	}
 
 	Index.search = function(options, onSuccess, onError){
 		Network.searchOIPd(options, function(results){
-			let res = Index.stripUnsupported(results);
+			if (options.protocol === "media") {
+				let supported = Index.stripUnsupported(results);
+				let filtered = Index.filterArtifacts(supported);
 
-			onSuccess(res);
+				onSuccess(filtered);
+			} else {
+				onSuccess(results);
+			}
 		}, function(error){
 			onError(error);
 		})
@@ -73,24 +152,28 @@ var IndexFunction = function(){
 			pubs = JSON.parse(LocStorage.registeredPublishers).arr;
 		}
 
-		Network.getPublishersFromOIPd(function(jsonResult) {
-			var newPubs = jsonResult;
+		Network.getPublishersFromOIPd(function(results) {
+			var newPubs = results;
 			for (var i = 0; i < pubs.length; i++) {
 				newPubs.push(pubs[i])
 			}
+
+			Index.addToDb("Publishers", results)
 			onSuccess(newPubs);
 		});
 	}
 
 	Index.getRegisteredRetailers = function(onSuccess, onError){
-		Network.getRetailersFromOIPd(function(jsonResult) {
-			onSuccess(jsonResult);
+		Network.getRetailersFromOIPd(function(results) {
+			Index.addToDb("Retailers", results)
+			onSuccess(results);
 		});
 	}
 
 	Index.getRegisteredPromoters = function(onSuccess, onError){
-		Network.getPromotersFromOIPd(function(jsonResult) {
-			onSuccess(jsonResult);
+		Network.getPromotersFromOIPd(function(results) {
+			Index.addToDb("Promoters", results)
+			onSuccess(results);
 		});
 	}
 
@@ -104,70 +187,70 @@ var IndexFunction = function(){
 				if (pub.address.substr(0, id.length) === id){
 					found = true;
 					onSuccess(pub);
+					return;
 				}
 			}
-
-			if (!found)
-				onError("No Publisher found for ID!");
 		}
-		
-		Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
-			onSuccess(results[0]['publisher-data']['alexandria-publisher']);
-		}, function(err){
-			onError(err);
-		});
+
+		var publisherInDb = Index.db.get("Publishers").find({address: id}).value();
+
+		if (publisherInDb) {
+			onSuccess(publisherInDb)
+		} else {
+			Network.searchOIPd({"protocol": "publisher", "search-on": "address", "search-for": id}, function(results){
+				var pub = results[0]['publisher-data']['alexandria-publisher'];
+
+				Index.addToDb("Publishers", pub)
+
+				onSuccess(pub);
+			}, function(err){
+				onError(err);
+			});
+		}
 	}
 
 	Index.getRetailer = function(id, onSuccess, onError){
-		Network.getRetailersFromOIPd(function(retailers) {
-			var success = false;
+		var retailerInDb = Index.db.get("Retailers").find({address: id}).value();
 
-			for (var i = 0; i < retailers.length; i++) {
-				if (retailers[i] && retailers[i].txid){
-					if (retailers[i].txid === id){
-						success = true;
-						onSuccess(retailers[i]);
-					}
-				}
-			}
-			
-			if (!success){
-				onError("No Retailer Found");
-			}
-		});
+		if (retailerInDb) {
+			onSuccess(retailerInDb)
+		} else {
+			Network.searchOIPd({"protocol": "retailer", "search-on": "address", "search-for": id}, function(results){
+				var retailer = results[0];
+
+				Index.addToDb("Retailers", retailer)
+
+				onSuccess(retailer);
+			}, function(err){
+				onError(err);
+			});
+		}
 	}
 
 	Index.getPromoter = function(id, onSuccess, onError){
-		Network.getRetailersFromOIPd(function(promoters) {
-			var success = false;
+		var retailerInDb = Index.db.get("Promoters").find({address: id}).value();
 
-			for (var i = 0; i < promoters.length; i++) {
-				if (promoters[i] && promoters[i].txid){
-					if (promoters[i].txid === id){
-						success = true;
-						onSuccess(promoters[i]);
-					}
-				}
-			}
+		if (retailerInDb) {
+			onSuccess(retailerInDb)
+		} else {
+			Index.search({"protocol": "retailer", "search-on": "address", "search-for": id}, function(results){
+				var retailer = results[0];
 
-			if (!success){
-				onError("No Promoter Found");
-			}
-		});
+				Index.addToDb("Retailers", retailer)
+
+				onSuccess(retailer);
+			}, function(err){
+				onError(err);
+			});
+		}
 	}
 
 	Index.getPublisherArtifacts = function(pubAddress, onSuccess, onError){
-		Index.getSupportedArtifacts(function(results){
-			var artifacts = [];
-
-			for (var i = 0; i < results.length; i++) {
-				if (Artifact.getPublisher(results[i]) === pubAddress){
-					artifacts.push(results[i]);
-				}
-			}
-
-			onSuccess(artifacts);
-		}, onError)
+		Index.search({"protocol": "media", "search-on": "address", "search-for": id}, function(results){
+			onSuccess(results);
+		}, function(err){
+			onError(err);
+		});
 	}
 
 	Index.getRandomSuggested = function(onSuccess){

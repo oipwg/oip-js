@@ -66,7 +66,8 @@ var settingsFunction = function(userSettings){
 				port: '9095', 
 				protocol: 'http'
 			}
-		}
+		},
+		artifactFilters: {nsfw: false}
 	}
 
 	this.settings = Object.assign({}, settings, userSettings);

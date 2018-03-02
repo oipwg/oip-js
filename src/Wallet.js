@@ -34,7 +34,7 @@ var WalletFunction = function(){
 	}
 
 	Wallet.Login = function(identifier, password, onSuccess, onError){
-		Wallet.wallet = new oipmw.Wallet(identifier, password, undefined, { "walletKeystoreURL": settings.keystoreServerURL });
+		Wallet.wallet = new oipmw.Wallet(identifier, password, "florincoin", { "walletKeystoreURL": settings.keystoreServerURL });
 
 		Wallet.wallet.load().then(() => {
 		   		Wallet.refresh(onSuccess, onError);

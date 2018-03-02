@@ -42,7 +42,7 @@ var IndexFunction = function(){
 	}
 
 	Index.getSupportedArtifacts = function(onSuccess, onError){
-		var SupportedArtifactList = Index.db.get("SupportedArtifacts").value();
+		var SupportedArtifactList = Index.db.get("SupportedArtifacts").orderBy("timestamp", "desc").value();
 
 		if (SupportedArtifactList.length < 50){
 			Network.getArtifactsFromOIPd(function(jsonResult) {

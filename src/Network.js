@@ -117,9 +117,7 @@ var NetworkFunction = function(){
 	Network.getPublishersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.publishersLastUpdate) > Network.publishersUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/publisher/get/all", {
-				transformResponse: [function (data) {
-					return [...data]; 
-				}], responseType: 'json'
+				responseType: 'json'
 			}).then( function(results){ 
 				Network.cachedPublishers = results.data;
 				Network.publishersLastUpdate = Date.now();
@@ -135,9 +133,7 @@ var NetworkFunction = function(){
 	Network.getPromotersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.promotersLastUpdate) > Network.promotersUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/promoter/get/all", {
-				transformResponse: [function (data) {
-					return [...data]; 
-				}], responseType: 'json'
+				responseType: 'json'
 			}).then( function(results){ 
 				Network.cachedPromoters = results.data;
 				Network.promotersLastUpdate = Date.now();
@@ -153,9 +149,7 @@ var NetworkFunction = function(){
 	Network.getRetailersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.retailersLastUpdate) > Network.retailersUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/retailer/get/all", {
-				transformResponse: [function (data) {
-					return [...data]; 
-				}], responseType: 'json'
+				responseType: 'json'
 			}).then( function(results){ 
 				Network.cachedRetailers = results.data;
 				Network.retailersLastUpdate = Date.now();

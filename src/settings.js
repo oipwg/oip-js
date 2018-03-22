@@ -3,6 +3,7 @@ var settingsFunction = function(userSettings){
 		userSettings = {};
 
 	var settings = {
+		debug: false,
 		runIPFSJS: false,
 		runIPFSAPIUpload: true,
 		runIPFSAPICluster: true,

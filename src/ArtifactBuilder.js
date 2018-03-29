@@ -8,8 +8,14 @@ class ArtifactBuilder {
 	constructor(Core){
 		this.Core = Core;
 
+		var tmpWalAddress;
+
+		if (this.Core && this.Core.Wallet){
+			tmpWalAddress = this.Core.Wallet.getMainAddress("florincoin")
+		}
+
 		this.artifact = {
-			floAddress: this.Core.Wallet.getMainAddress("florincoin") || "",
+			floAddress: tmpWalAddress || "",
 			info: {},
 			details: {},
 			storage: { network: "IPFS", files: [] },
@@ -68,11 +74,45 @@ class ArtifactBuilder {
 	setLocation(location){
 		this.artifact.storage.location = location;
 	}
+	setPaymentFiat(fiat){
+		this.artifact.payment.fiat = fiat;
+	}
+	setPaymentScale(newScale){
+		this.artifact.payment.scale = newScale;
+	}
+	setSuggestedTip(sugTipArray){
+		this.artifact.payment.tips = sugTipArray;
+	}
+	addTokenRule(tokenRule){
+		this.artifact.payment.tokens.push(tokenRule);
+	}
+	addSinglePaymentAddress(coin, address){
+
+	}
+	setMultiwalletAddress(address){
+
+	}
+	addSupportedMWCoin(coin){
+
+	}
+	setRetailerCut(newCut){
+		this.artifact.payment.retailer = newCut;
+	}
+	setPromoterCut(newCut){
+		this.artifact.payment.promoter = newCut;
+	}
+	setMaxDiscount(newMax){
+		this.artifact.payment.maxdisc = newMax;
+	}
 	addFile(file){
 		if (file instanceof ArtifactFileBuilder){
 			this.FileObjects.push(file);
 		} else {
-			this.FileObjects.push((new ArtifactFileBuilder).fromJSON(file));
+			var newFileObj = new ArtifactFileBuilder();
+
+			newFileObj.fromJSON(file);
+
+			this.FileObjects.push(newFileObj);
 		}
 	}
 	isValidArtifact(){
@@ -85,7 +125,7 @@ class ArtifactBuilder {
 	}
 	toJSON(){
 		this.artifact.storage.files = [];
-		
+
 		for (var file of this.FileObjects){
 			this.artifact.storage.files.push(file.toJSON())
 		}
@@ -147,7 +187,7 @@ class ArtifactBuilder {
 			this.setMainAddress(artifact.publisher)
 		}
 		if (artifact.timestamp){
-			this.setTimestamp(artifact.publisher)
+			this.setTimestamp(artifact.timestamp)
 		}
 		if (artifact.type){
 			if (artifact.type.split("-").length === 2){
@@ -205,7 +245,7 @@ class ArtifactBuilder {
 				this.setPaymentFiat(artifact.payment.fiat);
 			}
 			if (artifact.payment.scale){
-				this.setPaymentScale(this.payment.scale);
+				this.setPaymentScale(artifact.payment.scale);
 			}
 			if (artifact.payment.sugTip){
 				this.setSuggestedTip(artifact.payment.sugTip)
@@ -227,7 +267,7 @@ class ArtifactBuilder {
 				this.setPromoterCut(artifact.payment.promoter)
 			}
 			if (artifact.payment.maxdisc){
-				this.setMaxDiscout(artifact.payment.maxdisc)
+				this.setMaxDiscount(artifact.payment.maxdisc)
 			}
 		}
 	}
@@ -238,3 +278,33 @@ class ArtifactBuilder {
 		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

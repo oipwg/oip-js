@@ -27,20 +27,38 @@ class ArtifactBuilder {
 	setTXID(txid){
 		this.txid = txid;
 	}
+	getTXID(){
+		return this.txid;
+	}
 	setPublisherName(pubName){
 		this.publisherName = pubName;
+	}
+	getPublisherName(){
+		return this.publisherName
 	}
 	setMainAddress(address){
 		this.artifact.floAddress = address;
 	}
+	getMainAddress(){
+		return this.artifact.floAddress	
+	}
 	setTimestamp(time){
 		this.artifact.timestamp = time;
+	}
+	getTimestamp(){
+		return this.artifact.timestamp
 	}
 	setTitle(title){
 		this.artifact.info.title = title;
 	}
+	getTitle(){
+		return this.title
+	}
 	setDescription(description){
 		this.artifact.info.description = description;
+	}
+	getDescription(){
+		return this.artifact.info.description
 	}
 	setType(type){
 		type = this.capitalizeFirstLetter(type);
@@ -51,58 +69,121 @@ class ArtifactBuilder {
 
 		this.artifact.type = type;
 	}
+	getType(){
+		return this.artifact.type
+	}
 	setSubtype(subtype){
 		subtype = this.capitalizeFirstLetter(subtype);
 		
 		this.artifact.subtype = subtype;
 	}
+	getSubtype(){
+		return this.artifact.subtype
+	}
 	setYear(year){
 		this.artifact.info.year = year;
+	}
+	getYear(){
+		return this.artifact.info.year
 	}
 	setNSFW(nsfwToggle){
 		this.artifact.info.nsfw = nsfwToggle;
 	}
+	getNSFW(){
+		return this.artifact.info.nsfw || false
+	}
 	setTags(tags){
 		this.artifact.info.tags = tags;
+	}
+	getTags(){
+		return this.artifact.info.tags
 	}
 	setDetail(detailNode, info){
 		this.artifact.details[detailNode] = info;
 	}
+	getDetail(detailNode){
+		return this.artifact.details[detailNode]
+	}
 	setNetwork(network){
 		this.artifact.storage.network = network;
+	}
+	getNetwork(){
+		return this.artifact.storage.network
 	}
 	setLocation(location){
 		this.artifact.storage.location = location;
 	}
+	getLocation(){
+		return this.artifact.storage.location
+	}
 	setPaymentFiat(fiat){
 		this.artifact.payment.fiat = fiat;
+	}
+	getPaymentFiat(){
+		return this.artifact.payment.fiat
 	}
 	setPaymentScale(newScale){
 		this.artifact.payment.scale = newScale;
 	}
+	getPaymentScale(){
+		return this.artifact.payment.scale
+	}
 	setSuggestedTip(sugTipArray){
 		this.artifact.payment.tips = sugTipArray;
+	}
+	getSuggestedTip(){
+		return this.artifact.payment.tips
 	}
 	addTokenRule(tokenRule){
 		this.artifact.payment.tokens.push(tokenRule);
 	}
+	getTokenRules(){
+		return this.artifact.payment.tokens
+	}
 	addSinglePaymentAddress(coin, address){
+		var tmpObj = {};
+		tmpObj[coin] = address;
 
+		if (!this.artifact.payment.addresses)
+			this.artifact.payment.addresses = [];
+
+		this.artifact.payment.addresses.push(tmpObj)
+	}
+	getPaymentAddresses(){
+		return this.artifact.payment.addresses
 	}
 	setMultiwalletAddress(address){
-
+		this.artifact.payment.shortMW = address
+	}
+	getMultiwalletAddress(){
+		return this.artifact.payment.shortMW
 	}
 	addSupportedMWCoin(coin){
+		if (!this.artifact.payment.coins)
+			this.artifact.payment.coins = [];
 
+		this.artifact.payment.coins.push(coin);
+	}
+	getSupportedMWCoins(){
+		return this.artifact.payment.coins
 	}
 	setRetailerCut(newCut){
 		this.artifact.payment.retailer = newCut;
 	}
+	getRetailerCut(){
+		return this.artifact.payment.retailer
+	}
 	setPromoterCut(newCut){
 		this.artifact.payment.promoter = newCut;
 	}
+	getPromoterCut(){
+		return this.artifact.payment.promoter
+	}
 	setMaxDiscount(newMax){
 		this.artifact.payment.maxdisc = newMax;
+	}
+	getMaxDiscount(){
+		return this.artifact.payment.maxdisc
 	}
 	addFile(file){
 		if (file instanceof ArtifactFileBuilder){
@@ -114,6 +195,9 @@ class ArtifactBuilder {
 
 			this.FileObjects.push(newFileObj);
 		}
+	}
+	getFiles(){
+		return this.FileObjects
 	}
 	isValidArtifact(){
 		if (!this.artifact.info.title || this.artifact.info.title === ""){
@@ -278,33 +362,3 @@ class ArtifactBuilder {
 		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

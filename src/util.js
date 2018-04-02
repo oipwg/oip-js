@@ -110,6 +110,36 @@ var utilFunction = function(){
 		return btc_value * Math.pow(10,6);
 	}
 
+	util.getEntypoIconForType = function(type){
+		let icon;
+
+		switch(type){
+			case "Audio":
+				icon = "beamed-note";
+				break;
+			case "Video":
+				icon = "clapperboard";
+				break;
+			case "Image":
+				icon = "image";
+				break;
+			case "Text":
+				icon = "text";
+				break;
+			case "Software":
+				icon = "code";
+				break;
+			case "Web":
+				icon = "code";
+				break;
+			default:
+				icon = "";
+				break;
+		}
+
+		return icon;
+	}
+
 	this.util = util;
 	return this.util;
 }

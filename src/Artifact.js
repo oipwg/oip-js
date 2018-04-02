@@ -1,314 +1,394 @@
-var ArtifactFunction = function(){
-	var util = this.util;
+import ArtifactFile from './ArtifactFile.js';
 
-	var Artifact = {};
+const DEFAULT_NETWORK = "IPFS";
+const SUPPORTED_TYPES = ["Audio", "Video", "Image", "Text", "Software", "Web", "Research", "Property"]
 
-	Artifact.maxThumbnailSize = 512000;
+module.exports =
+class Artifact {
+	constructor(Core){
+		this.Core = Core;
 
-	Artifact.getTXID = function(oip){
-		let txid = "";
-		try {
-			txid = oip.txid
-		} catch(e) {}
-		return txid;
-	}
+		var tmpWalAddress;
 
-	Artifact.getTitle = function(oip){
-		let title = "";
-		try {
-			title = oip['oip-041'].artifact.info.title
-		} catch(e) {}
-		return util.decodeMakeJSONSafe(title);
-	}
-
-	Artifact.getType = function(oip){
-		let type = "";
-		try {
-			type = oip['oip-041'].artifact.type.split('-')[0];
-		} catch(e) {}
-		return type;
-	}
-
-	Artifact.getSubtype = function(oip){
-		let subtype = "";
-		try {
-			subtype = oip['oip-041'].artifact.type.split('-')[1];
-		} catch(e) {}
-		return subtype;
-	}
-
-	Artifact.getDescription = function(oip){
-		let description = "";
-		try {
-			description = oip['oip-041'].artifact.info.description;
-
-		} catch(e) {}
-		return util.decodeMakeJSONSafe(description);
-	}
-
-	Artifact.getFiles = function(oip){
-		let files = [];
-		try {
-			let tmpFiles = oip['oip-041'].artifact.storage.files;
-
-			for (let i = 0; i < tmpFiles.length; i++) {
-				files.push(tmpFiles[i])
-			}
-		} catch(e) {}
-
-		return [...files];
-	}
-
-	Artifact.getLocation = function(oip){
-		let location = "";
-		try {
-			location = oip['oip-041'].artifact.storage.location
-		} catch(e) {}
-		return location;
-	}
-
-	Artifact.getTimestamp = function(oip){
-		let timestamp = 0;
-		try {
-			timestamp = oip['oip-041'].artifact.timestamp
-		} catch(e) {}
-		return timestamp;
-	}
-
-	Artifact.getPublisherName = function(oip){
-		let pubName = "Flotoshi";
-
-		try {
-			pubName = oip.publisherName
-		} catch(e) {}
-
-		return pubName;
-	}
-
-	Artifact.getPublisher = function(oip){
-		let pubName = "";
-
-		try {
-			pubName = oip.publisher
-		} catch(e) {}
-
-		return pubName;
-	}
-
-	Artifact.getArtist = function(oip){
-		let artist = "";
-		try {
-			artist = oip['oip-041'].artifact.info.extraInfo.artist
-		} catch(e) {}
-
-		if (artist === ""){
-			try {
-				artist = Artifact.getPublisherName(oip);
-			} catch(e) {}
+		if (this.Core && this.Core.Wallet){
+			tmpWalAddress = this.Core.Wallet.getMainAddress("florincoin")
 		}
 
-		return artist;
-	}
-
-	Artifact.getScale = function(oip){
-		let scale = 1;
-
-		try {
-			let tmpScale = oip['oip-041'].artifact.payment.scale;
-
-			if (tmpScale && tmpScale.split(":").length === 2){
-				scale = tmpScale.split(":")[0];
-			}
-		} catch (e) {}
-
-		return scale 
-	}
-
-	Artifact.getMainFile = function(oip, type){
-		let mainFile;
-
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-
-		if (!type){
-			type = Artifact.getType(oip);
+		this.artifact = {
+			floAddress: tmpWalAddress || "",
+			info: {},
+			details: {},
+			storage: { network: DEFAULT_NETWORK, files: [] },
+			payment: {}
 		}
 
-		for (let i = 0; i < files.length; i++){
-			if (files[i].type === type && !mainFile){
-				mainFile = files[i];
-			}
+		this.FileObjects = [];
+	}
+	setTXID(txid){
+		this.txid = txid;
+	}
+	getTXID(){
+		return this.txid;
+	}
+	setPublisherName(pubName){
+		this.publisherName = pubName;
+	}
+	getPublisherName(){
+		return this.publisherName
+	}
+	setMainAddress(address){
+		this.artifact.floAddress = address;
+	}
+	getMainAddress(){
+		return this.artifact.floAddress	
+	}
+	setTimestamp(time){
+		this.artifact.timestamp = time;
+	}
+	getTimestamp(){
+		return this.artifact.timestamp
+	}
+	setTitle(title){
+		this.artifact.info.title = title;
+	}
+	getTitle(){
+		return this.title
+	}
+	setDescription(description){
+		this.artifact.info.description = description;
+	}
+	getDescription(){
+		return this.artifact.info.description
+	}
+	setType(type){
+		type = this.capitalizeFirstLetter(type);
+
+		if (SUPPORTED_TYPES.indexOf(type) === -1){
+			return "Type Not Supported!";
 		}
 
-		// If no file is found with the correct type, default to use the first file in the Artifact
-		if (!mainFile){
-			if (files[0])
-				mainFile = files[0];
+		this.artifact.type = type;
+	}
+	getType(){
+		return this.artifact.type
+	}
+	setSubtype(subtype){
+		subtype = this.capitalizeFirstLetter(subtype);
+		
+		this.artifact.subtype = subtype;
+	}
+	getSubtype(){
+		return this.artifact.subtype
+	}
+	setYear(year){
+		this.artifact.info.year = year;
+	}
+	getYear(){
+		return this.artifact.info.year
+	}
+	setNSFW(nsfwToggle){
+		this.artifact.info.nsfw = nsfwToggle;
+	}
+	getNSFW(){
+		return this.artifact.info.nsfw || false
+	}
+	setTags(tags){
+		this.artifact.info.tags = tags;
+	}
+	getTags(){
+		return this.artifact.info.tags
+	}
+	setDetail(detailNode, info){
+		this.artifact.details[detailNode] = info;
+	}
+	getDetail(detailNode){
+		return this.artifact.details[detailNode]
+	}
+	setNetwork(network){
+		this.artifact.storage.network = network;
+	}
+	getNetwork(){
+		return this.artifact.storage.network
+	}
+	setLocation(location){
+		this.artifact.storage.location = location;
+	}
+	getLocation(){
+		return this.artifact.storage.location
+	}
+	setPaymentFiat(fiat){
+		this.artifact.payment.fiat = fiat;
+	}
+	getPaymentFiat(){
+		return this.artifact.payment.fiat
+	}
+	setPaymentScale(newScale){
+		this.artifact.payment.scale = newScale;
+	}
+	getPaymentScale(){
+		return this.artifact.payment.scale
+	}
+	setSuggestedTip(sugTipArray){
+		this.artifact.payment.tips = sugTipArray;
+	}
+	getSuggestedTip(){
+		return this.artifact.payment.tips
+	}
+	addTokenRule(tokenRule){
+		this.artifact.payment.tokens.push(tokenRule);
+	}
+	getTokenRules(){
+		return this.artifact.payment.tokens
+	}
+	addSinglePaymentAddress(coin, address){
+		var tmpObj = {};
+		tmpObj[coin] = address;
+
+		if (!this.artifact.payment.addresses)
+			this.artifact.payment.addresses = [];
+
+		this.artifact.payment.addresses.push(tmpObj)
+	}
+	getPaymentAddresses(){
+		return this.artifact.payment.addresses
+	}
+	setMultiwalletAddress(address){
+		this.artifact.payment.shortMW = address
+	}
+	getMultiwalletAddress(){
+		return this.artifact.payment.shortMW
+	}
+	addSupportedMWCoin(coin){
+		if (!this.artifact.payment.coins)
+			this.artifact.payment.coins = [];
+
+		this.artifact.payment.coins.push(coin);
+	}
+	getSupportedMWCoins(){
+		return this.artifact.payment.coins
+	}
+	setRetailerCut(newCut){
+		this.artifact.payment.retailer = newCut;
+	}
+	getRetailerCut(){
+		return this.artifact.payment.retailer
+	}
+	setPromoterCut(newCut){
+		this.artifact.payment.promoter = newCut;
+	}
+	getPromoterCut(){
+		return this.artifact.payment.promoter
+	}
+	setMaxDiscount(newMax){
+		this.artifact.payment.maxdisc = newMax;
+	}
+	getMaxDiscount(){
+		return this.artifact.payment.maxdisc
+	}
+	addFile(file){
+		if (file instanceof ArtifactFile){
+			this.FileObjects.push(file);
+		} else {
+			var newFileObj = new ArtifactFile();
+
+			newFileObj.fromJSON(file);
+
+			this.FileObjects.push(newFileObj);
 		}
-
-		return mainFile;
 	}
-
-	Artifact.getFileCost = function(oip, file_number, purchase_type){
-		let fileCost;
-
-		let files = Artifact.getFiles(oip);
-
-		if (purchase_type === "buy"){
-			fileCost = files[file_number].sugBuy;
-		} else if (purchase_type === "play"){
-			fileCost = files[file_number].sugPlay;
-		}
-
-		return fileCost;
+	getFiles(){
+		return this.FileObjects
 	}
-
-	Artifact.getFiat = function(oip){
-		var fiat = "usd";
-
-		try {
-			fiat = oip['oip-041'].artifact.payment.fiat.toLowerCase();
-		} catch (e) {}
-
-		return fiat;
-	}
-
-	Artifact.getDuration = function(oip){
-		let duration;
-
-		let files = Artifact.getFiles(oip);
-
-		for (var i = files.length - 1; i >= 0; i--) {
-			if (files[i].duration && !duration)
-				duration = files[i].duration;
-		}
-
-		return duration;
-	}
-
-	Artifact.getTipPrefs = function(oip){
-		let sugTip = [];
-		try {
-			sugTip = oip['oip-041'].artifact.payment.sugTip
-		} catch(e) {}
-		return sugTip;
-	}
-
-	Artifact.getThumbnail = function(oip){
-		let thumbnail;
-
-		let files = Artifact.getFiles(oip);
-		let location = Artifact.getLocation(oip);
-
-		for (let i = 0; i < files.length; i++){
-			if (files[i].type === "Image" && files[i].subtype === "cover" && !files[i].sugPlay && !files[i].disPlay && files[i].fsize < Artifact.maxThumbnailSize && !thumbnail){
-				thumbnail = files[i];
-			}
-		}
-
-		if (!thumbnail){
-			for (let i = 0; i < files.length; i++){
-				if (files[i].type === "Image" && !files[i].sugPlay && !files[i].disPlay && files[i].fsize < Artifact.maxThumbnailSize && !thumbnail){
-					thumbnail = files[i];
-				}
+	getThumbnail(){
+		for (var file of this.getFiles()){
+			if (file.getType() === "Image" && file.getSubtype() === "Thumbnail"){
+				return file;
 			}
 		}
-
-		return thumbnail;
+		return undefined;
 	}
-
-	Artifact.getEntypoIconForType = function(type){
-		let icon;
-
-		switch(type){
-			case "Audio":
-				icon = "beamed-note";
-				break;
-			case "Video":
-				icon = "clapperboard";
-				break;
-			case "Image":
-				icon = "image";
-				break;
-			case "Text":
-				icon = "text";
-				break;
-			case "Software":
-				icon = "code";
-				break;
-			case "Web":
-				icon = "code";
-				break;
-			default:
-				icon = "";
-				break;
+	getDuration(){
+		for (var file of this.getFiles()){
+			if (!isNaN(file.getDuration())){
+				return file;
+			}
 		}
-
-		return icon;
+		return undefined;
 	}
-
-	Artifact.paid = function(oip){
-		let files = Artifact.getFiles(oip);
+	isValid(){
+		if (!this.artifact.info.title || this.artifact.info.title === ""){
+			return {success: false, error: "Artifact Title is a Required Field"}
+		}
+		if (!this.artifact.floAddress || this.artifact.floAddress === ""){
+			return {success: false, error: "floAddress is a Required Field! Please define it or Login!"}
+		}
+	}
+	isPaid(){
+		let files = this.getFiles();
 
 		let paid = false;
+
 		if (files){
-			for (var i = 0; i < files.length; i++){
-				if (files[i].sugPlay || files[i].sugBuy)
+			for (var file of files){
+				if (file.isPaid())
 					paid = true;
 			}
 		}
 
 		return paid;
 	}
+	toJSON(){
+		this.artifact.storage.files = [];
 
-	Artifact.isFilePaid = function(file){
-		let paid = false;
-		
-		if (file.sugPlay || file.sugBuy)
-			paid = true;
+		for (var file of this.FileObjects){
+			this.artifact.storage.files.push(file.toJSON())
+		}
 
-		return paid;
+		var retJSON = {
+			oip042: {	
+				artifact: this.artifact
+			}
+		}
+
+		if (this.txid){
+			retJSON.txid = this.txid;
+		}
+		if (this.publisherName){
+			retJSON.publisherName = this.publisherName;
+		}
+
+		return JSON.parse(JSON.stringify(retJSON))
 	}
-
-	Artifact.getPaymentAddresses = function(oip, file_num){
-		let addrs = {};
-
-		try {
-			if (file_num && oip && oip.oip042 && oip.oip042.artifact.storage && oip.oip042.artifact.storage.files[file_num] && oip.oip042.artifact.storage.files[file_num].shortMW){
-				addrs = { 'shortMW': oip.oip042.artifact.storage.files[file_num].shortMW }
-			} else {
-				addrs = oip['oip-041'].artifact.payment.addresses;
+	fromJSON(artifact){
+		if (artifact){
+			if (artifact.txid){
+				this.setTXID(artifact.txid)
+			}
+			if (artifact.publisherName){
+				this.setPublisherName(artifact.publisherName)
 			}
 
-			if (addrs === {})
-				addrs.florincoin = Artifact.getPublisher(oip);
-		} catch (e) {}
-
-		return addrs;
+			if (artifact['alexandria-media']){
+				if (artifact['alexandria-media'].artifact){
+					return this.importAlexandriaMedia(artifact['alexandria-media'].artifact)
+				} else {
+					return {success: false, error: "No Artifact under Version!"}
+				}
+			} else if (artifact['oip-041']){
+				if (artifact['oip-041'].artifact){
+					return this.import041(artifact['oip-041'].artifact)
+				} else {
+					return {success: false, error: "No Artifact under Version!"}
+				}
+			} else if (artifact.oip042){
+				if (artifact.oip042.artifact){
+					return this.import042(artifact.oip042.artifact)
+				} else {
+					return {success: false, error: "No Artifact under Version!"}
+				}
+			} else {
+				return {success: false, error: "Artifact is Not a Supported Version!"}
+			}
+		} else {
+			return {success: false, error: "Artifact Not Provided!"}
+		}
 	}
+	importAlexandriaMedia(artifact){
 
-	Artifact.getRetailerCut = function(oip, file_num){
-		var retailerCut = 0;
-
-		try {
-			retailerCut = oip['oip-041'].artifact.payment.retailer
-		} catch (e) {}
-
-		return retailerCut
 	}
+	import041(artifact){
+		if (artifact.publisher){
+			this.setMainAddress(artifact.publisher)
+		}
+		if (artifact.timestamp){
+			this.setTimestamp(artifact.timestamp)
+		}
+		if (artifact.type){
+			if (artifact.type.split("-").length === 2){
+				var type = artifact.type.split("-")[0];
+				var subtype = artifact.type.split("-")[1];
 
-	Artifact.getPromoterCut = function(oip, file_num){
-		var promoterCut = 0;
+				this.setType(type);
+				this.setSubtype(subtype);
+			} else if (artifact.type.split("-").length === 1){
+				this.setType(artifact.type)
+			}
+		}
+		if (artifact.info){
+			if (artifact.info.title){
+				this.setTitle(artifact.info.title)
+			}
+			if (artifact.info.description){
+				this.setDescription(artifact.info.description)
+			}
+			if (artifact.info.year){
+				this.setYear(artifact.info.year)
+			}
+			if (artifact.info.tags){
+				this.setTags(artifact.info.tags)
+			}
+			if (artifact.info.nsfw){
+				this.setNSFW(artifact.info.nsfw)
+			}
 
-		try {
-			promoterCut = oip['oip-041'].artifact.payment.promoter
-		} catch (e) {}
+			if (artifact.info.extraInfo){
+				for (var key in artifact.info.extraInfo){
+					if (artifact.info.extraInfo.hasOwnProperty(key)){
+						this.setDetail(key, artifact.info.extraInfo[key]);
+					}
+				}
+			}
+		}
 
-		return promoterCut
+		if (artifact.storage){
+			if (artifact.storage.network){
+				this.setNetwork(artifact.storage.network);
+			}
+			if (artifact.storage.location){
+				this.setLocation(artifact.storage.location);
+			}
+			if (artifact.storage.files){
+				for (var file of artifact.storage.files){
+					this.addFile(file);
+				}
+			}
+		}
+
+		if (artifact.payment){
+			if (artifact.payment.fiat){
+				this.setPaymentFiat(artifact.payment.fiat);
+			}
+			if (artifact.payment.scale){
+				this.setPaymentScale(artifact.payment.scale);
+			}
+			if (artifact.payment.sugTip){
+				this.setSuggestedTip(artifact.payment.sugTip)
+			}
+			if (artifact.payment.tokens){
+				for (var token of artifact.payment.tokens){
+					this.addTokenRule(token)
+				}
+			}
+			if (artifact.payment.addresses){
+				for (var address of artifact.payment.addresses){
+					this.addSinglePaymentAddress(address.token, address.address)
+				}
+			}
+			if (artifact.payment.retailer){
+				this.setRetailerCut(artifact.payment.retailer)
+			}
+			if (artifact.payment.promoter){
+				this.setPromoterCut(artifact.payment.promoter)
+			}
+			if (artifact.payment.maxdisc){
+				this.setMaxDiscount(artifact.payment.maxdisc)
+			}
+		}
 	}
+	import042(artifact){
 
-	this.Artifact = Artifact;
-	return this.Artifact;
+	}
+	capitalizeFirstLetter(string){
+		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+	}
 }
-
-export default ArtifactFunction;

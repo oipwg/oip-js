@@ -371,7 +371,7 @@ class Artifact {
 						} else if (key === "posterFrame"){
 							tmpFiles.push({fname: artifact.info['extra-info'][key], type: "Image", subtype: "Thumbnail"})
 						} else if (key === "runtime"){
-							this.setDetail("duration", artifact['extra-info'][key]);
+							this.setDetail("duration", artifact.info['extra-info'][key]);
 						} else if (key === "files"){
 							var fileList = artifact.info['extra-info'][key];
 

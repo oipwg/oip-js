@@ -1,9 +1,9 @@
 const low = require('lowdb')
 const Memory = require('lowdb/adapters/Memory')
 var _ = require('lodash')
+var Artifact = require('./Artifact.js')
 
 var IndexFunction = function(){
-	var Artifact = this.Artifact;
 	var Network = this.Network;
 	var LocStorage = this.localStorage;
 	var settings = this.settings;
@@ -72,12 +72,18 @@ var IndexFunction = function(){
 		var supportedArtifacts = [];
 
 		for (var x = artifacts.length -1; x >= 0; x--){
-			if (artifacts[x]['oip-041']){
-				if (artifacts[x]['oip-041'].artifact.type.split('-').length === 2){
-					if (artifacts[x]['oip-041'].artifact.type !== "Property")
-						supportedArtifacts.push(artifacts[x]);
-				}
-			}
+			var tmpArtifact = new Artifact();
+
+			try {
+				var fromJS = tmpArtifact.fromJSON(artifacts[x])
+
+				var validate = tmpArtifact.isValid()
+
+				if (validate && validate.success)
+					supportedArtifacts.push(tmpArtifact);
+				else 
+					console.error(fromJS, validate, artifacts[x], tmpArtifact.toJSON());
+			} catch (e) { console.error(e) }
 		}   
 
 		return [...supportedArtifacts];
@@ -94,10 +100,6 @@ var IndexFunction = function(){
 			filteredArtifacts = _.filter(filteredArtifacts, settings.artifactFilters)
 		}
 
-		for (var i in filteredArtifacts){
-			filteredArtifacts[i].short = filteredArtifacts[i].txid.substr(0,6)
-		}
-
 		Index.addToDb("SupportedArtifacts", filteredArtifacts)
 
 		return [...filteredArtifacts];
@@ -110,11 +112,12 @@ var IndexFunction = function(){
 			short = true;
 		}
 
-		var filter = {};
-
-		filter[short ? "short" : "txid"] = id;
-
-		var artifactInDb = Index.db.get("SupportedArtifacts").find(filter).value();
+		var artifactInDb = Index.db.get("SupportedArtifacts").find(function(artifact){
+			if (artifact.getTXID().substr(0, id.length) === id)
+				return true;
+			else
+				return false;
+		}).value();
 
 		if (!artifactInDb) {
 			Index.search({"protocol": "media", "search-on": "txid", "search-for": id}, function(results){

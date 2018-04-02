@@ -52,7 +52,7 @@ class Artifact {
 		this.artifact.info.title = title;
 	}
 	getTitle(){
-		return this.title
+		return this.artifact.info.title
 	}
 	setDescription(description){
 		this.artifact.info.description = description;
@@ -105,6 +105,9 @@ class Artifact {
 		return this.artifact.details[detailNode]
 	}
 	setNetwork(network){
+		if (network === "ipfs")
+			network = "IPFS"
+
 		this.artifact.storage.network = network;
 	}
 	getNetwork(){
@@ -222,6 +225,17 @@ class Artifact {
 		if (!this.artifact.floAddress || this.artifact.floAddress === ""){
 			return {success: false, error: "floAddress is a Required Field! Please define it or Login!"}
 		}
+		if (this.FileObjects === []){
+			return {success: false, error: "No Files Added to Artifact!"}
+		}
+		if (!this.artifact.storage.network){
+			return {success: false, error: "No Network Defined for Files!"}
+		}
+		if (!this.artifact.storage.location){
+			return {success: false, error: "No Storage Location Defined!"}
+		}
+
+		return {success: true}
 	}
 	isPaid(){
 		let files = this.getFiles();
@@ -268,9 +282,9 @@ class Artifact {
 				this.setPublisherName(artifact.publisherName)
 			}
 
-			if (artifact['alexandria-media']){
-				if (artifact['alexandria-media'].artifact){
-					return this.importAlexandriaMedia(artifact['alexandria-media'].artifact)
+			if (artifact['media-data']){
+				if (artifact['media-data']['alexandria-media']){
+					return this.importAlexandriaMedia(artifact['media-data']['alexandria-media'])
 				} else {
 					return {success: false, error: "No Artifact under Version!"}
 				}
@@ -287,14 +301,110 @@ class Artifact {
 					return {success: false, error: "No Artifact under Version!"}
 				}
 			} else {
-				return {success: false, error: "Artifact is Not a Supported Version!"}
+				return {success: false, error: "Artifact is Not a Supported Version!", detail: artifact}
 			}
 		} else {
 			return {success: false, error: "Artifact Not Provided!"}
 		}
 	}
 	importAlexandriaMedia(artifact){
+		if (artifact.publisher){
+			this.setMainAddress(artifact.publisher)
+		}
+		if (artifact.timestamp){
+			this.setTimestamp(artifact.timestamp)
+		}
+		if (artifact.type){
+			var type = artifact.type;
 
+			if (type === "music"){
+				type = "Audio"
+			}
+			if (type === "book"){
+				type = "Text"
+				this.setSubtype("Book")
+			}
+			if (type === "thing"){
+				type = "Web"
+			}
+
+			this.setType(type)
+		}
+		if (artifact.torrent){
+			this.setLocation(artifact.torrent)
+
+			if (artifact.torrent.split(":")[0] === "btih"){
+				this.setNetwork("bittorrent")
+			}
+		}
+		if (artifact.info){
+			if (artifact.info.title){
+				this.setTitle(artifact.info.title)
+			}
+			if (artifact.info.description){
+				this.setDescription(artifact.info.description)
+			}
+			if (artifact.info.year){
+				this.setYear(artifact.info.year)
+			}
+
+			if (artifact.info['extra-info']){
+				var tmpFiles = [];
+				var hadFiles = false;
+				for (var key in artifact.info['extra-info']){
+					if (artifact.info['extra-info'].hasOwnProperty(key)){
+						if (key === "tags"){
+							this.setTags(artifact.info['extra-info'][key])
+						} else if (key === "Bitcoin Address"){
+							this.addSinglePaymentAddress("btc", artifact.info['extra-info'][key])
+						} else if (key === "DHT Hash"){
+							var hash = artifact.info['extra-info'][key]
+
+							this.setLocation(hash);
+
+							if (hash.split(":")[0] && hash.split(":")[0] === "magnet"){
+								this.setNetwork("bittorrent")
+							}
+						} else if (key === "filename"){
+							if (artifact.info['extra-info'][key] !== "none")
+								tmpFiles.push({fname: artifact.info['extra-info'][key]})
+						} else if (key === "posterFrame"){
+							tmpFiles.push({fname: artifact.info['extra-info'][key], type: "Image", subtype: "Thumbnail"})
+						} else if (key === "runtime"){
+							this.setDetail("duration", artifact['extra-info'][key]);
+						} else if (key === "files"){
+							var fileList = artifact.info['extra-info'][key];
+
+							for (var file of fileList){
+								this.addFile(file);
+							}
+
+							if (this.FileObjects.length > 0)
+								hadFiles = true;
+						} else {
+							this.setDetail(key, artifact.info['extra-info'][key]);
+						}
+					}
+				}
+
+				if (!hadFiles){
+					for (var file of tmpFiles){
+						this.addFile(file);
+					}
+				}
+			}
+		}
+		if (artifact.payment){
+			// if (artifact.payment.type && artifact.payment.type === "tip"){
+			// 	this.setPaymentFiat(artifact.payment.fiat);
+			// }
+			// if (artifact.payment.scale){
+			// 	this.setPaymentScale(artifact.payment.scale);
+			// }
+			// if (artifact.payment.sugTip){
+			// 	this.setSuggestedTip(artifact.payment.sugTip)
+			// }
+		}
 	}
 	import041(artifact){
 		if (artifact.publisher){
@@ -364,7 +474,7 @@ class Artifact {
 			if (artifact.payment.sugTip){
 				this.setSuggestedTip(artifact.payment.sugTip)
 			}
-			if (artifact.payment.tokens){
+			if (artifact.payment.tokens && Array.isArray(artifact.payment.tokens)){
 				for (var token of artifact.payment.tokens){
 					this.addTokenRule(token)
 				}

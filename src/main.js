@@ -1,6 +1,5 @@
 import settings from './settings.js';
 import util from './util.js';
-import Artifact from './Artifact.js';
 import Network from './Network.js';
 import Data from './Data.js';
 import Index from './Index.js';
@@ -23,7 +22,6 @@ var OIPJS = function(userSettings){
 	Core.localStorage = localStorage;
 	Core.settings = settings.bind(Core)(userSettings);
 	Core.util = util.bind(Core)();
-	Core.Artifact = Artifact.bind(Core)();
 	Core.Network = Network.bind(Core)();
 	Core.Data = Data.bind(Core)();
 	Core.Index = Index.bind(Core)();

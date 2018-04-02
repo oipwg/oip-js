@@ -74,9 +74,7 @@ class ArtifactFile {
 		if (!this.file.fname){
 			return {success: false, error: "No Filename!"}
 		}
-		if (!this.file.fsize){
-			return {success: false, error: "No Filesize!"}
-		}
+		return true;
 	}
 	isPaid(){
 		let paid = false;

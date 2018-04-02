@@ -68,7 +68,7 @@ var settingsFunction = function(userSettings){
 				protocol: 'http'
 			}
 		},
-		artifactFilters: {nsfw: false}
+		artifactFilters: [function(artifact){ if (artifact.getNSFW()){ return false } else { return true } }]
 	}
 
 	this.settings = Object.assign({}, settings, userSettings);

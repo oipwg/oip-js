@@ -361,10 +361,6 @@ class Artifact {
 							var hash = artifact.info['extra-info'][key]
 
 							this.setLocation(hash);
-
-							if (hash.split(":")[0] && hash.split(":")[0] === "magnet"){
-								this.setNetwork("bittorrent")
-							}
 						} else if (key === "filename"){
 							if (artifact.info['extra-info'][key] !== "none")
 								tmpFiles.push({fname: artifact.info['extra-info'][key]})
@@ -496,7 +492,88 @@ class Artifact {
 		}
 	}
 	import042(artifact){
+		if (artifact.floAddress){
+			this.setMainAddress(artifact.floAddress)
+		}
+		if (artifact.timestamp){
+			this.setTimestamp(artifact.timestamp)
+		}
+		if (artifact.type){
+			this.setType(artifact.type)
+		}
+		if (artifact.subtype){
+			this.setSubtype(artifact.subtype)
+		}
+		if (artifact.info){
+			if (artifact.info.title){
+				this.setTitle(artifact.info.title)
+			}
+			if (artifact.info.description){
+				this.setDescription(artifact.info.description)
+			}
+			if (artifact.info.year){
+				this.setYear(artifact.info.year)
+			}
+			if (artifact.info.tags){
+				this.setTags(artifact.info.tags)
+			}
+			if (artifact.info.nsfw){
+				this.setNSFW(artifact.info.nsfw)
+			}
+		}
 
+		if (artifact.details){
+			for (var key in artifact.details){
+				if (artifact.details.hasOwnProperty(key)){
+					this.setDetail(key, artifact.details[key]);
+				}
+			}
+		}
+
+		if (artifact.storage){
+			if (artifact.storage.network){
+				this.setNetwork(artifact.storage.network);
+			}
+			if (artifact.storage.location){
+				this.setLocation(artifact.storage.location);
+			}
+			if (artifact.storage.files){
+				for (var file of artifact.storage.files){
+					this.addFile(file);
+				}
+			}
+		}
+
+		if (artifact.payment){
+			if (artifact.payment.fiat){
+				this.setPaymentFiat(artifact.payment.fiat);
+			}
+			if (artifact.payment.scale){
+				this.setPaymentScale(artifact.payment.scale);
+			}
+			if (artifact.payment.sugTip){
+				this.setSuggestedTip(artifact.payment.sugTip)
+			}
+			if (artifact.payment.tokens && Array.isArray(artifact.payment.tokens)){
+				for (var token of artifact.payment.tokens){
+					this.addTokenRule(token)
+				}
+			}
+			if (artifact.payment.addresses){
+				for (var address of artifact.payment.addresses){
+					this.addSinglePaymentAddress(address.token, address.address)
+				}
+			}
+			if (artifact.payment.retailer){
+				this.setRetailerCut(artifact.payment.retailer)
+			}
+			if (artifact.payment.promoter){
+				this.setPromoterCut(artifact.payment.promoter)
+			}
+			if (artifact.payment.maxdisc){
+				this.setMaxDiscount(artifact.payment.maxdisc)
+			}
+		}
 	}
 	capitalizeFirstLetter(string){
 		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();

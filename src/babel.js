@@ -1,9 +1,9 @@
 import OIPJS from './main.js';
-import ArtifactBuilder from './ArtifactBuilder.js';
-import ArtifactFileBuilder from './ArtifactFileBuilder.js';
+import Artifact from './Artifact.js';
+import ArtifactFile from './ArtifactFile.js';
 
 module.exports = {
 	OIPJS,
-	ArtifactBuilder,
-	ArtifactFileBuilder
+	Artifact,
+	ArtifactFile
 };

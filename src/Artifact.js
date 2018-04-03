@@ -93,7 +93,15 @@ class Artifact {
 		return this.artifact.info.nsfw || false
 	}
 	setTags(tags){
-		this.artifact.info.tags = tags;
+		if (Array.isArray(tags)){
+			this.artifact.info.tags = tags;
+		} else {
+			if (tags.split(",").length > 1){
+				this.artifact.info.tags = tags.split(",")
+			} else {
+				this.artifact.info.tags = [tags]
+			}
+		}
 	}
 	getTags(){
 		return this.artifact.info.tags

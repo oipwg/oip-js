@@ -120,15 +120,12 @@ var IndexFunction = function(){
 		}).value();
 
 		if (!artifactInDb) {
-			Index.search({"protocol": "media", "search-on": "txid", "search-for": id}, function(results){
-				if (results.length === 0){
-					onError("Artifact Not Found")
-				} else {
-					onSuccess(results[0]);
-				}
-			}, function(err){
-				onError(err);
-			});
+			Network.getArtifactFromOIPd(id, function(result){
+				let supported = Index.stripUnsupported([result]);
+				let filtered = Index.filterArtifacts(supported);
+
+				onSuccess(filtered[0]);
+			}, onError)
 		} else {
 			onSuccess(artifactInDb);
 		}

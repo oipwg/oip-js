@@ -98,6 +98,14 @@ var NetworkFunction = function(){
 		});
 	}
 
+	Network.getArtifactFromOIPd = function(id, onSuccess, onError){
+		axios.get(settings.OIPdURL + "/artifact/get?id=" + id, {
+			responseType: 'json'
+		}).then( function(result){ 
+			onSuccess(result.data);
+		}).catch(onError);
+	}
+
 	Network.getArtifactsFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.artifactsLastUpdate) > Network.artifactsUpdateTimelimit){
 			axios.get(settings.OIPdURL + "/media/get/all", {

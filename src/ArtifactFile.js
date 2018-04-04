@@ -25,7 +25,7 @@ class ArtifactFile {
 		return this.file.duration
 	}
 	setType(type){
-		this.file.type = type;
+		this.file.type = this.capitalizeFirstLetter(type);
 	}
 	getType(){
 		return this.file.type
@@ -35,7 +35,7 @@ class ArtifactFile {
 			subtype = "Thumbnail"
 		}
 
-		this.file.subtype = subtype;
+		this.file.subtype = this.capitalizeFirstLetter(subtype);
 	}
 	getSubtype(){
 		return this.file.subtype
@@ -118,5 +118,8 @@ class ArtifactFile {
 				this.setLocation(fileObj.location)
 			}
 		}
+	}
+	capitalizeFirstLetter(string){
+		return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 	}
 }

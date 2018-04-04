@@ -46,6 +46,24 @@ class ArtifactFile {
 	getFilesize(){
 		return this.file.fsize
 	}
+	setContentType(contentType){
+		this.file.ctype = contentType;
+	}
+	getContentType(){
+		return this.file.ctype
+	}
+	setFileNotes(notes){
+		this.file.fnotes = notes;
+	}
+	getFileNotes(){
+		return this.file.fnotes;
+	}
+	setSoftware(software){
+		this.file.software = software;
+	}
+	getSoftware(){
+		return this.file.software
+	}
 	setNetwork(network){
 		this.file.network = network;
 	}
@@ -116,6 +134,21 @@ class ArtifactFile {
 			}
 			if (fileObj.location){
 				this.setLocation(fileObj.location)
+			}
+			if (fileObj.cType){
+				this.setContentType(fileObj.cType)
+			}
+			if (fileObj.ctype){
+				this.setContentType(fileObj.ctype)
+			}
+			if (fileObj.fNotes){
+				this.setFileNotes(fileObj.fNotes)
+			}
+			if (fileObj.fnotes){
+				this.setFileNotes(fileObj.fnotes)
+			}
+			if (fileObj.software){
+				this.setSoftware(fileObj.software)
 			}
 		}
 	}

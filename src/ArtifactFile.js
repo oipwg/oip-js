@@ -13,6 +13,10 @@ class ArtifactFile {
 		this.file.dname = displayName;
 	}
 	getDisplayName(){
+		if (!this.file.dname || this.file.dname === ""){
+			return this.getFilename()
+		}
+		
 		return this.file.dname;
 	}
 	setDuration(seconds){

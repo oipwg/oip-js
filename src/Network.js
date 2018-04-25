@@ -108,15 +108,39 @@ var NetworkFunction = function(){
 
 	Network.getArtifactsFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.artifactsLastUpdate) > Network.artifactsUpdateTimelimit){
-			axios.get(settings.OIPdURL + "/media/get/all", {
-				responseType: 'json'
-			}).then( function(results){ 
-				Network.cachedArtifacts = results.data;
-				Network.artifactsLastUpdate = Date.now();
-				onSuccess(Network.cachedArtifacts);
-			}).catch(function(error){
-				onError(error);
-			});
+			if (settings.indexFilters.publisher){
+				axios.get(settings.OIPdURL + "/artifact/get/publisher?p=" + settings.indexFilters.publisher, {
+					responseType: 'json'
+				}).then( function(results){ 
+					Network.cachedArtifacts = results.data;
+					Network.artifactsLastUpdate = Date.now();
+					onSuccess(Network.cachedArtifacts);
+				}).catch(function(error){
+					onError(error);
+				});
+			} else if (settings.indexFilters.type && settings.indexFilters.subtype && (settings.indexFilters.type !== "*" && settings.indexFilters.subtype !== "*")) {
+				var type = settings.indexFilters.type || "*";
+				var subtype = settings.indexFilters.subtype || "*";
+				axios.get(settings.OIPdURL + "/artifact/get/type?t=" + type + "&st=" + subtype, {
+					responseType: 'json'
+				}).then( function(results){ 
+					Network.cachedArtifacts = results.data;
+					Network.artifactsLastUpdate = Date.now();
+					onSuccess(Network.cachedArtifacts);
+				}).catch(function(error){
+					onError(error);
+				});
+			} else {
+				axios.get(settings.OIPdURL + "/media/get/all", {
+					responseType: 'json'
+				}).then( function(results){ 
+					Network.cachedArtifacts = results.data;
+					Network.artifactsLastUpdate = Date.now();
+					onSuccess(Network.cachedArtifacts);
+				}).catch(function(error){
+					onError(error);
+				});
+			}
 		} else {
 			onSuccess(Network.cachedArtifacts);
 		}

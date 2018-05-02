@@ -38,17 +38,26 @@ var NetworkFunction = function(){
 
 	// Initiate all instances
 	try {
-		Network.ipfs = new IPFS_MAIN(settings.ipfsConfig);
+		if (settings.runIPFSJS)
+			Network.ipfs = new IPFS_MAIN(settings.ipfsConfig);
+		else 
+			Network.ipfs = "not-supported"
 	} catch (e) {
 		Network.ipfs = "not-supported"
 	}
 	try {
-		Network.ipfsUploadAPI = ipfsAPI(settings.ipfsAPIConfig.uploadNode);
+		if (settings.runIPFSAPIUpload)
+			Network.ipfsUploadAPI = ipfsAPI(settings.ipfsAPIConfig.uploadNode);
+		else 
+			Network.ipfsUploadAPI = "not-supported"
 	} catch (e) {
 		Network.ipfsUploadAPI = "not-supported"
 	}
 	try {
-		Network.ipfsClusterAPI = ipfsAPI(settings.ipfsAPIConfig.clusterNode);
+		if (settings.runIPFSAPICluster)
+			Network.ipfsClusterAPI = ipfsAPI(settings.ipfsAPIConfig.clusterNode);
+		else
+			Network.ipfsClusterAPI = "not-supported"
 	} catch (e) {
 		Network.ipfsClusterAPI = "not-supported"
 	}

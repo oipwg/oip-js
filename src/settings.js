@@ -7,7 +7,7 @@ var settingsFunction = function(userSettings){
 		runIPFSJS: false,
 		runIPFSAPIUpload: true,
 		runIPFSAPICluster: true,
-		OIPdURL: "https://api.alexandria.io/alexandria/v2",
+		OIPdURL: "https://etdb.caltech.edu/api/v2",
 		IPFSGatewayURL: "https://gateway.ipfs.io/ipfs/",
 		issoURL: "https://isso.alexandria.io/",
 		btcTickerURL: "https://blockchain.info/ticker?cors=true",

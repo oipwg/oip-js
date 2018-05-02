@@ -233,15 +233,6 @@ class Artifact {
 		if (!this.artifact.floAddress || this.artifact.floAddress === ""){
 			return {success: false, error: "floAddress is a Required Field! Please define it or Login!"}
 		}
-		if (this.FileObjects === []){
-			return {success: false, error: "No Files Added to Artifact!"}
-		}
-		if (!this.artifact.storage.network){
-			return {success: false, error: "No Network Defined for Files!"}
-		}
-		if (!this.artifact.storage.location){
-			return {success: false, error: "No Storage Location Defined!"}
-		}
 
 		return {success: true}
 	}

@@ -1,4 +1,6 @@
-var OIPJS = require('../../lib/babel.js').OIPJS();
+var OIPJS = require('../../lib/babel.js').OIPJS({
+	debug: true
+});
 
 var numbartifacts = 1150;
 OIPJS.Index.getSuggestedContent(function(artifacts, loadMore){

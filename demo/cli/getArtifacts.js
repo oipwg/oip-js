@@ -3,14 +3,14 @@ var OIPJS = require('../../lib/babel.js').OIPJS({
 });
 
 var numbartifacts = 1150;
-OIPJS.Index.getSuggestedContent(function(artifacts, loadMore){
+OIPJS.Index.getArtifacts(function(artifacts, loadMore){
 	console.log("Successfully grabbed " + artifacts.length + " Artifacts!");
 	console.log("Grabbing some more!");
 	var loadMoreSuccess = function(artifacts, loadMore){
 		console.log("Grabbed " + artifacts.length + " more!");
 
 		OIPJS.Index.getSupportedArtifacts(function(artifacts){
-			console.log("Number of currently loaded Supported Artifacts: " + artifacts.length)
+			console.log("Number of currently loaded Artifacts: " + artifacts.length)
 
 			if (artifacts.length < numbartifacts)
 				loadMore(loadMoreSuccess, console.error)

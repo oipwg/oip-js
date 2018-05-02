@@ -154,8 +154,9 @@ var NetworkFunction = function(){
 	Network.getArtifactsFromOIPd = function(page, onSuccess, onError){
 		var numResults = Network.resultsPerPage;
 
-		if (page === "*"){
-			numResults = page;
+		if (isNaN(page) && page !== "*"){
+			onError = onSuccess;
+			onSuccess = page;
 			page = 1;
 		}
 

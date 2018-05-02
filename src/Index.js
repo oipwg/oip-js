@@ -56,7 +56,7 @@ var IndexFunction = function(){
 		}
 	}
 
-	Index.getSuggestedContent = function(pageNumber, onSuccess, onError){
+	Index.getArtifacts = function(pageNumber, onSuccess, onError){
 		var page = pageNumber || 1;
 
 		if (isNaN(page) && page !== "*"){
@@ -67,17 +67,18 @@ var IndexFunction = function(){
 
 		var loadMore = function(newPageNumber, onSuccess, onError){
 			Network.getArtifactsFromOIPd(newPageNumber, function(artifacts, currentPageNumber) {
-				console.log("Total Results: " + artifacts.length)
 				let supported = Index.stripUnsupported(artifacts);
-				console.log("Supported: " + supported.length);
 				let filtered = Index.filterArtifacts(supported);
-				console.log("Filtered: " + filtered.length)
 
 				onSuccess([...filtered], function(onSuccess, onError){ loadMore(currentPageNumber + 1, onSuccess, onError) });
 			}, onError);
 		}
 
 		loadMore(page, onSuccess, onError);
+	}
+
+	Index.getSuggestedContent = function(pageNumber, onSuccess, onError){
+		Index.getArtifacts(pageNumber, onSuccess, onError);
 	}
 
 	Index.stripUnsupported = function(artifacts){

@@ -163,24 +163,20 @@ var NetworkFunction = function(){
 			page = 1;
 		}
 
+		var type = settings.indexFilters.type || "*";
+		var subtype = settings.indexFilters.subtype || "*";
+		
+		var builtURL = "/artifact/get/type?t=" + type + "&st=" + subtype + "&results=" + numResults + "&page=" + page
+		
 		if (settings.indexFilters.publisher){
-			var builtURL = "/artifact/get/publisher?p=" + settings.indexFilters.publisher + "&results=" + numResults + "&page=" + page;
-			var onResponse = function(response){ 
-				onSuccess(response.data.results, page, response.data);
-			}
-
-			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
-		} else {
-			var type = settings.indexFilters.type || "*";
-			var subtype = settings.indexFilters.subtype || "*";
-			
-			var builtURL = "/artifact/get/type?t=" + type + "&st=" + subtype + "&results=" + numResults + "&page=" + page
-			var onResponse = function(response){ 
-				onSuccess(response.data.results, page, response.data);
-			}
-
-			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
+			builtURL += "&pub=" + settings.indexFilters.publisher
 		}
+
+		var onResponse = function(response){ 
+			onSuccess(response.data.results, page, response.data);
+		}
+
+		Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 	}
 
 	Network.getPublishersFromOIPd = function(onSuccess, onError){

@@ -68,7 +68,13 @@ var settingsFunction = function(userSettings){
 				protocol: 'http'
 			}
 		},
-		artifactFilters: [function(artifact){ if (artifact.getNSFW()){ return false } else { return true } }],
+		artifactFilters: [function(artifact){ 
+			if (!artifact.getNSFW()){ 
+				return true 
+			} else { 
+				return false 
+			} 
+		}],
 		indexFilters: {
 			publisher: undefined,
 			type: "*",

@@ -92,6 +92,18 @@ class ArtifactFile {
 	getSuggestedBuyCost(){
 		return this.file.sugBuy
 	}
+	setDisallowPlay(disallowPlay){
+		this.file.disPlay = disallowPlay
+	}
+	getDisallowPlay(){
+		return this.file.disPlay || false
+	}
+	setDisallowBuy(disallowBuy){
+		this.file.disBuy = disallowBuy
+	}
+	getDisallowBuy(){
+		return this.file.disBuy || false
+	}
 	isValid(){
 		if (!this.file.fname){
 			return {success: false, error: "No Filename!"}
@@ -153,6 +165,12 @@ class ArtifactFile {
 			}
 			if (fileObj.software){
 				this.setSoftware(fileObj.software)
+			}
+			if (fileObj.disPlay){
+				this.setDisallowPlay(fileObj.disPlay)
+			}
+			if (fileObj.disBuy){
+				this.setDisallowBuy(fileObj.disBuy)
 			}
 		}
 	}

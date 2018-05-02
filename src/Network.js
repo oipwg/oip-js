@@ -9,6 +9,14 @@ var NetworkFunction = function(){
 
 	var Network = {};
 
+	Network.OIPdAPI = axios.create({
+		baseURL: settings.OIPdURL
+	});
+
+	Network.backupOIPdAPI = axios.create({
+		baseURL: settings.backupOIPdURL
+	});
+
 	Network.resultsPerPage = 100;
 
 	Network.cachedArtifacts = [];
@@ -62,19 +70,42 @@ var NetworkFunction = function(){
 		Network.ipfsClusterAPI = "not-supported"
 	}
 
+	Network.OIPdRequest = function(type, url, options, onSuccess, onError){
+		if (type === "get"){
+			var runBackupServer = function(){
+				if (settings.debug){
+					console.log("Initial request failed! Requesting with BACKUP OIPdAPI URL!!! " + url)
+				}
+				Network.backupOIPdAPI.get(url).then(onSuccess).catch(onError)
+			}
+
+			Network.OIPdAPI.get(url).then(function(response){
+				if (!response.status === 200){
+					runBackupServer();
+				} else {
+					onSuccess(response);
+				}
+			}).catch(runBackupServer);
+		} else if (type === "post"){
+			Network.OIPdAPI.post(url, options).then(onSuccess).catch(function(){
+				if (settings.debug){
+					console.log("Initial request failed! Requesting with BACKUP OIPdAPI URL!!! " + url)
+				}
+				Network.backupOIPdAPI.post(url, options).then(onSuccess).catch(onError)
+			});
+		}
+	}
+
 	Network.getLatestOIPdInfo = function(onSuccess, onError){
 		if ((Date.now() - Network.oipdInfoLastUpdate) > Network.oipdInfoUpdateTimelimit){
-			axios.get(settings.OIPdURL + "/info", {
-				transformResponse: [function (data) {
-					return [...data]; 
-				}], responseType: 'json'
-			}).then( function(results){ 
+			var builtURL = "/info";
+			var onResponse = function(results){ 
 				Network.cachedOIPdInfo = results.data;
 				Network.oipdInfoLastUpdate = Date.now();
 				onSuccess(Network.cachedOIPdInfo);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		} else {
 			onSuccess(Network.cachedOIPdInfo);
 		}
@@ -100,21 +131,24 @@ var NetworkFunction = function(){
 				options["search-like"] = defaultOptions["search-like"];
 		}
 
-		axios.post(settings.OIPdURL + "/search", options)
-		.then(function(results){
+		var builtURL = "/search";
+		var onResponse = function(results){
 			if (results && results.data && results.data.status === "success" && results.data.response)
 				onSuccess([...results.data.response]);
 			else
 				onError(results);
-		});
+		}
+
+		Network.OIPdRequest("post", builtURL, options, onResponse, onError)
 	}
 
 	Network.getArtifactFromOIPd = function(id, onSuccess, onError){
-		axios.get(settings.OIPdURL + "/artifact/get?id=" + id, {
-			responseType: 'json'
-		}).then( function(result){ 
+		var builtURL = "/artifact/get?id=" + id;
+		var onResponse = function(result){ 
 			onSuccess(result.data);
-		}).catch(onError);
+		}
+
+		Network.OIPdRequest("post", builtURL, options, onResponse, onError)
 	}
 
 	Network.getArtifactsFromOIPd = function(page, onSuccess, onError){
@@ -126,39 +160,35 @@ var NetworkFunction = function(){
 		}
 
 		if (settings.indexFilters.publisher){
-			axios.get(settings.OIPdURL + "/artifact/get/publisher?p=" + settings.indexFilters.publisher + "&results=" + numResults + "&page=" + page, {
-				responseType: 'json'
-			}).then( function(response){ 
+			var builtURL = "/artifact/get/publisher?p=" + settings.indexFilters.publisher + "&results=" + numResults + "&page=" + page;
+			var onResponse = function(response){ 
 				onSuccess(response.data.results, page, response.data);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		} else {
 			var type = settings.indexFilters.type || "*";
 			var subtype = settings.indexFilters.subtype || "*";
-			var url = settings.OIPdURL + "/artifact/get/type?t=" + type + "&st=" + subtype + "&results=" + numResults + "&page=" + page
-			console.log("Request URL: " + url)
-			axios.get(url, {
-				responseType: 'json'
-			}).then( function(response){ 
+			
+			var builtURL = "/artifact/get/type?t=" + type + "&st=" + subtype + "&results=" + numResults + "&page=" + page
+			var onResponse = function(response){ 
 				onSuccess(response.data.results, page, response.data);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		}
 	}
 
 	Network.getPublishersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.publishersLastUpdate) > Network.publishersUpdateTimelimit){
-			axios.get(settings.OIPdURL + "/publisher/get/all", {
-				responseType: 'json'
-			}).then( function(results){ 
+			var builtURL = "/publisher/get/all";
+			var onResponse = function(results){ 
 				Network.cachedPublishers = results.data;
 				Network.publishersLastUpdate = Date.now();
 				onSuccess(Network.cachedPublishers);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		} else {
 			onSuccess(Network.cachedPublishers);
 		}
@@ -166,15 +196,14 @@ var NetworkFunction = function(){
 
 	Network.getPromotersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.promotersLastUpdate) > Network.promotersUpdateTimelimit){
-			axios.get(settings.OIPdURL + "/promoter/get/all", {
-				responseType: 'json'
-			}).then( function(results){ 
+			var builtURL = "/promoter/get/all";
+			var onResponse = function(results){ 
 				Network.cachedPromoters = results.data;
 				Network.promotersLastUpdate = Date.now();
 				onSuccess(Network.cachedPromoters);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		} else {
 			onSuccess(Network.cachedPromoters);
 		}
@@ -182,15 +211,14 @@ var NetworkFunction = function(){
 
 	Network.getRetailersFromOIPd = function(onSuccess, onError){
 		if ((Date.now() - Network.retailersLastUpdate) > Network.retailersUpdateTimelimit){
-			axios.get(settings.OIPdURL + "/retailer/get/all", {
-				responseType: 'json'
-			}).then( function(results){ 
+			var builtURL = "/retailer/get/all";
+			var onResponse = function(results){ 
 				Network.cachedRetailers = results.data;
 				Network.retailersLastUpdate = Date.now();
 				onSuccess(Network.cachedRetailers);
-			}).catch(function(error){
-				onError(error);
-			});
+			}
+
+			Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 		} else {
 			onSuccess(Network.cachedRetailers);
 		}

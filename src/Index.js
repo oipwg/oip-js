@@ -45,8 +45,8 @@ var IndexFunction = function(){
 		var SupportedArtifactList = Index.db.get("SupportedArtifacts").orderBy("timestamp", "desc").value();
 
 		if (SupportedArtifactList.length < 50){
-			Network.getArtifactsFromOIPd(function(jsonResult) {
-				let supported = Index.stripUnsupported(jsonResult);
+			Network.getArtifactsFromOIPd(function(artifacts) {
+				let supported = Index.stripUnsupported(artifacts);
 				let filtered = Index.filterArtifacts(supported);
 
 				onSuccess([...filtered]);
@@ -56,16 +56,28 @@ var IndexFunction = function(){
 		}
 	}
 
-	Index.getSuggestedContent = function(userid, callback){
-		// In the future we will generate content specific for users, for now, just the generic is ok :)
-		// userid is not currently implemented or used.
-		Index.getSupportedArtifacts(function(supportedArtifacts){
-			if (supportedArtifacts.length > 25){
-				callback(supportedArtifacts.slice(0,25));
-			} else {
-				callback(supportedArtifacts);
-			}
-		})
+	Index.getSuggestedContent = function(pageNumber, onSuccess, onError){
+		var page = pageNumber || 1;
+
+		if (isNaN(page) && page !== "*"){
+			onError = onSuccess;
+			onSuccess = pageNumber;
+			page = 1;
+		} 
+
+		var loadMore = function(newPageNumber, onSuccess, onError){
+			Network.getArtifactsFromOIPd(newPageNumber, function(artifacts, currentPageNumber) {
+				console.log("Total Results: " + artifacts.length)
+				let supported = Index.stripUnsupported(artifacts);
+				console.log("Supported: " + supported.length);
+				let filtered = Index.filterArtifacts(supported);
+				console.log("Filtered: " + filtered.length)
+
+				onSuccess([...filtered], function(onSuccess, onError){ loadMore(currentPageNumber + 1, onSuccess, onError) });
+			}, onError);
+		}
+
+		loadMore(page, onSuccess, onError);
 	}
 
 	Index.stripUnsupported = function(artifacts){

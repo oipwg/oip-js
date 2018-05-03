@@ -148,7 +148,7 @@ var NetworkFunction = function(){
 			onSuccess(result.data);
 		}
 
-		Network.OIPdRequest("get", builtURL, options, onResponse, onError)
+		Network.OIPdRequest("get", builtURL, {}, onResponse, onError)
 	}
 
 	Network.getArtifactsFromOIPd = function(page, onSuccess, onError){

@@ -1,6 +1,6 @@
 {
   "name": "oip-js",
-  "version": "1.1.17",
+  "version": "1.1.18",
   "description": "The core module of OIP written in Javascript!",
   "main": "lib/babel.js",
   "scripts": {

@@ -24,17 +24,28 @@ var IndexFunction = function(){
 	}).write()
 
 	Index.addToDb = function(dbObject, insertObject){
-		var addToList = function(dbObj, insObj){
-			var exists = Index.db.get(dbObj).find({ txid: insObj.txid }).value();
+		var CurrentDB = Index.db.get("SupportedArtifacts").value();
 
-			if (!exists){
-				return Index.db.get(dbObj).push(insObj).write();
-			}
+		var addToList = function(dbObj, insObj){
+			return Index.db.get(dbObj).push(insObj).write();
 		}
 
 		if (Array.isArray(insertObject)){
+			var toAdd = [];
+
 			for (var ins of insertObject){
-				addToList(dbObject, ins);
+				var match = false;
+
+				for (var curObj in CurrentDB){
+					if (ins.txid === curObj.txid){
+						match = true;
+						break;
+					}
+				}
+				
+				if (!match){
+					addToList(dbObject, ins);
+				}
 			}
 		} else {
 			return addToList(dbObject, insertObject);

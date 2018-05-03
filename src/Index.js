@@ -24,11 +24,8 @@ var IndexFunction = function(){
 	}).write()
 
 	Index.addToDb = function(dbObject, insertObject){
-		var CurrentDB = Index.db.get("SupportedArtifacts").value();
-
-		var addToList = function(dbObj, insObj){
-			return Index.db.get(dbObj).push(insObj).write();
-		}
+		var CurrentDB = Index.db.getState();
+		var selectedDB = CurrentDB[dbObject];
 
 		if (Array.isArray(insertObject)){
 			var toAdd = [];
@@ -36,7 +33,7 @@ var IndexFunction = function(){
 			for (var ins of insertObject){
 				var match = false;
 
-				for (var curObj in CurrentDB){
+				for (var curObj in selectedDB){
 					if (ins.txid === curObj.txid){
 						match = true;
 						break;
@@ -44,12 +41,28 @@ var IndexFunction = function(){
 				}
 				
 				if (!match){
-					addToList(dbObject, ins);
+					selectedDB.push(insObj)
 				}
 			}
 		} else {
-			return addToList(dbObject, insertObject);
+			var match = false;
+
+			for (var curObj in selectedDB){
+				if (insertObject.txid === curObj.txid){
+					match = true;
+					break;
+				}
+			}
+			
+			if (!match){
+				selectedDB.push(insertObject)
+			}
 		}
+
+		var newDB = CurrentDB;
+		newDB[dbObject] = selectedDB;
+		
+		Index.db.setState(newDB);
 	}
 
 	Index.getSupportedArtifacts = function(onSuccess, onError){

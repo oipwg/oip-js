@@ -72,9 +72,10 @@ var NetworkFunction = function(){
 
 	Network.OIPdRequest = function(type, url, options, onSuccess, onError){
 		if (type === "get"){
-			var runBackupServer = function(){
+			var runBackupServer = function(err){
 				if (settings.debug){
 					console.log("Initial request failed! Requesting with BACKUP OIPdAPI URL!!! " + url)
+					console.error(err);
 				}
 				Network.backupOIPdAPI.get(url).then(onSuccess).catch(onError)
 			}

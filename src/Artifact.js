@@ -221,7 +221,7 @@ class Artifact {
 	getDuration(){
 		for (var file of this.getFiles()){
 			if (!isNaN(file.getDuration())){
-				return file;
+				return file.getDuration();
 			}
 		}
 		return undefined;

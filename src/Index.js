@@ -87,9 +87,16 @@ var IndexFunction = function(){
 
 				if (validate && validate.success)
 					supportedArtifacts.push(tmpArtifact);
-				else 
-					console.error(fromJS, validate, artifacts[x], tmpArtifact.toJSON());
-			} catch (e) { console.error(e) }
+				else {
+					if (settings.debug){
+						console.error(fromJS, validate, artifacts[x], tmpArtifact.toJSON());
+					}
+				}
+			} catch (e) { 
+				if (settings.debug){
+					console.error(e) 
+				}
+			}
 		}   
 
 		return [...supportedArtifacts];

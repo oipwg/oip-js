@@ -648,7 +648,10 @@ class Artifact {
 			}
 
 			try {
-				var x = this.fromJSON(JSON.parse(jsonString))
+				this.fromJSON(JSON.parse(jsonString))
+				if (this.Multiparts[0] && this.Multiparts[0].getTXID() !== ""){
+					this.setTXID(this.Multiparts[0].getTXID())
+				}
 				this.fromMultipart = true;
 			} catch (e) {
 				return {success: false, message: "Unable to parse from JSON!", error: e}

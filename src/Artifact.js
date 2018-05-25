@@ -1,7 +1,11 @@
 import ArtifactFile from './ArtifactFile.js';
+import Multipart from './Multipart.js';
 
 const DEFAULT_NETWORK = "IPFS";
 const SUPPORTED_TYPES = ["Audio", "Video", "Image", "Text", "Software", "Web", "Research", "Property"]
+
+const CHOP_MAX_LEN = 370;
+const FLODATA_MAX_LEN = 528;
 
 module.exports =
 class Artifact {
@@ -23,6 +27,7 @@ class Artifact {
 		}
 
 		this.FileObjects = [];
+		this.Multiparts = [];
 	}
 	setTXID(txid){
 		this.txid = txid;
@@ -306,6 +311,9 @@ class Artifact {
 			return {success: false, error: "Artifact Not Provided!"}
 		}
 	}
+	toString(){
+		return JSON.stringify(this.toJSON())
+	}
 	importAlexandriaMedia(artifact){
 		if (artifact.publisher){
 			this.setMainAddress(artifact.publisher)
@@ -572,6 +580,81 @@ class Artifact {
 			if (artifact.payment.maxdisc){
 				this.setMaxDiscount(artifact.payment.maxdisc)
 			}
+		}
+	}
+	getMultiparts(){
+		var jsonString = this.toString();
+
+		if (jsonString.length > FLODATA_MAX_LEN) {
+			var exactMatch = false;
+
+			var oldArtifact = new Artifact();
+			oldArtifact.fromMultiparts(this.Multiparts)
+
+			if (oldArtifact.toString() === jsonString)
+				exactMatch = true;
+
+
+			if (!exactMatch){
+				this.Multiparts = [];
+
+				var chunks = [];
+				while (jsonString.length > CHOP_MAX_LEN) {
+					chunks[chunks.length] = jsonString.slice(0, CHOP_MAX_LEN);
+					jsonString = jsonString.slice(CHOP_MAX_LEN);
+				}
+				chunks[chunks.length] = jsonString;
+
+				for (var c in chunks){
+					var mp = new Multipart();
+
+					mp.setPartNumber(c);
+					mp.setTotalParts(chunks.length);
+					mp.setPublisherAddress(this.getMainAddress());
+					mp.setChoppedStringData(chunks[c]);
+
+					// If we are the first multipart, then sign ourself
+					if (c === 0){
+						// @TODO: Implement multipart signing
+						mp.sign();
+					}
+
+					this.Multiparts.push(mp);
+				}
+			}
+
+			return this.Multiparts;
+		} else {
+			// Too short to be a multipart!
+			return [];
+		}
+	}
+	fromMultiparts(multipartArray){
+		if (Array.isArray(multipartArray)){
+			for (var part in multipartArray){
+				if (multipartArray[part] instanceof Multipart){
+					this.Multiparts[part] = multipartArray[part];
+				} else {
+					var mp = new Multipart();
+					mp.fromString(multipartArray[part]);
+					this.Multiparts.push(mp);
+				}
+			}
+
+
+			var jsonString = "";
+
+			for (var multiP of this.Multiparts){
+				jsonString += multiP.getChoppedStringData();
+			}
+
+			try {
+				var x = this.fromJSON(JSON.parse(jsonString))
+			} catch (e) {
+				return {success: false, message: "Unable to parse from JSON!", error: e}
+			}
+		} else {
+			return {success: false, message: "You must pass an array!"}
 		}
 	}
 	capitalizeFirstLetter(string){

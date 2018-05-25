@@ -298,6 +298,10 @@ var IndexFunction = function(){
 		var matched = [];
 
 		Index.getArtifactFromID(txid, function(artifact){
+			if (txid.length <= 4){
+				txid = artifact.txid;
+			}
+
 			Index.getFloDataFromTXID(artifact.txid, function(txFloData){
 				var firstMp = new Multipart();
 

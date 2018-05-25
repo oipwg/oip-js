@@ -28,6 +28,7 @@ class Artifact {
 
 		this.FileObjects = [];
 		this.Multiparts = [];
+		this.fromMultipart = false;
 	}
 	setTXID(txid){
 		this.txid = txid;
@@ -585,7 +586,7 @@ class Artifact {
 	getMultiparts(){
 		var jsonString = this.toString();
 
-		if (jsonString.length > FLODATA_MAX_LEN) {
+		if (jsonString.length > FLODATA_MAX_LEN || this.fromMultipart) {
 			var exactMatch = false;
 
 			var oldArtifact = new Artifact();
@@ -593,7 +594,6 @@ class Artifact {
 
 			if (oldArtifact.toString() === jsonString)
 				exactMatch = true;
-
 
 			if (!exactMatch){
 				this.Multiparts = [];
@@ -641,7 +641,6 @@ class Artifact {
 				}
 			}
 
-
 			var jsonString = "";
 
 			for (var multiP of this.Multiparts){
@@ -650,6 +649,7 @@ class Artifact {
 
 			try {
 				var x = this.fromJSON(JSON.parse(jsonString))
+				this.fromMultipart = true;
 			} catch (e) {
 				return {success: false, message: "Unable to parse from JSON!", error: e}
 			}

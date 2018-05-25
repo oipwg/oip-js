@@ -310,7 +310,12 @@ var IndexFunction = function(){
 
 				matched.push(firstMp);
 
-				Network.searchFloData(txid, function(results){
+				var floDataSearch = txid;
+
+				if (floDataSearch.length > 10)
+					floDataSearch = floDataSearch.substr(0,10);
+
+				Network.searchFloData(floDataSearch, function(results){
 					if (results && results !== "null"){
 						for (var mp of results){
 							var tmpMp = new Multipart();

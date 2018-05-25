@@ -12,6 +12,10 @@ artifact.fromMultiparts(multipartStrings);
 
 var multiparts = artifact.getMultiparts();
 
-for (var mp of multiparts){
-	console.log(mp.toString());
+for (var mp in multiparts){
+	if (multipartStrings[mp] !== multiparts[mp].toString()){
+		throw new Error("Multipart doesn't match!")
+	}
 }
+
+console.log("Successful roundtrip of Multipart strings!");

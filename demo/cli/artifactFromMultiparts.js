@@ -19,3 +19,5 @@ for (var mp in multiparts){
 }
 
 console.log("Successful roundtrip of Multipart strings!");
+
+console.log(artifact.getTXID());

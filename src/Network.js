@@ -477,6 +477,28 @@ var NetworkFunction = function(){
 		});
 	}
 
+	Network.getTXFromFlosight = function(txid, onSuccess, onError){
+		axios.get(settings.flosightURL + "/tx/" + txid).then(function(res){
+			onSuccess(res.data);
+		}).catch(onError);
+	}
+
+	Network.searchFloData = function(options, onSuccess, onError){
+		if (typeof options === "string"){
+			options = {
+				search: options
+			}
+		}
+
+		if (!options.page)
+			options.page = 0
+
+		if (!options["results-per-page"])
+			options["results-per-page"] = 100;
+
+		Network.OIPdRequest("post", '/searchTxComment', options, function(res){ onSuccess(res.data) }, onError)
+	}
+
 	Network.tryOneTimeFaucet = function (address, recaptcha, onSuccess, onError) {
 		Network.tryFaucet("one_time", address, recaptcha, onSuccess, onError);
 	}

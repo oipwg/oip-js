@@ -18,6 +18,7 @@ var settingsFunction = function(userSettings){
 		faucetURL: "https://api.alexandria.io/faucet",
 		postFlorinsightTxURL: "https://florinsight.alexandria.io/api/tx/send",
 		keystoreServerURL: "https://flovault.alexandria.io/wallet/",
+		flosightURL: "https://livenet.flocha.in/api",
 		ipfsConfig: {
 			init: true,
 			start: true,

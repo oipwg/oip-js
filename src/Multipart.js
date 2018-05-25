@@ -8,6 +8,9 @@ class Multipart {
 		this.firstPartTXID = "";
 		this.signature = "";
 		this.choppedStringData = "";
+
+		// This is used to track a reference if someone pulled a multipart from an endpoint
+		this.txid = ""
 	}
 	setPrefix(prefix){
 		this.prefix = prefix;
@@ -61,6 +64,12 @@ class Multipart {
 	getChoppedStringData(){
 		return this.choppedStringData
 	}
+	setTXID(id){
+		this.txid = id;
+	}
+	getTXID(){
+		return this.txid;
+	}
 	isValid(){
 		if (this.getPrefix() !== "oip-mp"){
 			return {success: false, message: "Invalid Multipart Prefix!"}
@@ -96,6 +105,9 @@ class Multipart {
 				this.getChoppedStringData();
 	}
 	fromString(multipartString){
+		if (!multipartString || typeof multipartString !== "string")
+			return false;
+
 		// Split the input string into an array of all the characters
 		var characters = multipartString.split('');
 

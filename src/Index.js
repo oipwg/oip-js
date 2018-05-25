@@ -2,6 +2,7 @@ const low = require('lowdb')
 const Memory = require('lowdb/adapters/Memory')
 var _ = require('lodash')
 var Artifact = require('./Artifact.js')
+var Multipart = require('./Multipart.js')
 
 var IndexFunction = function(){
 	var Network = this.Network;
@@ -279,6 +280,56 @@ var IndexFunction = function(){
 		}
 
 		return strippedArtJSON;
+	}
+
+	Index.getFloDataFromTXID = function(txid, onSuccess, onError){
+		Network.getTXFromFlosight(txid, function(tx){
+			if (tx)
+				onSuccess(tx.floData);
+			else
+				onError("No Transaction Returned on Search!");
+		}, onError)
+	}
+
+	Index.getMultipartsForArtifact = function(txid, onSuccess, onError){
+		var matched = [];
+
+		Index.getArtifactFromID(txid, function(artifact){
+			Index.getFloDataFromTXID(artifact.txid, function(txFloData){
+				var firstMp = new Multipart();
+
+				firstMp.fromString(txFloData);
+				firstMp.setTXID(artifact.txid);
+
+				matched.push(firstMp);
+
+				Network.searchFloData(txid, function(results){
+					if (results && results !== "null"){
+						for (var mp of results){
+							var tmpMp = new Multipart();
+
+							tmpMp.fromString(mp.Message);
+							tmpMp.setTXID(mp.Hash);
+
+							// Get the shorter string
+							var trimLength = txid.length;
+
+							// Take whichever is shorter
+							if (tmpMp.getFirstPartTXID().length < trimLength && tmpMp.getFirstPartTXID().length > 0)
+								trimLength = tmpMp.getFirstPartTXID().length
+							
+							if (txid.substr(0, trimLength) === tmpMp.getFirstPartTXID().substr(0, trimLength)){
+								matched.push(tmpMp)
+							}
+						}
+
+						onSuccess(matched);
+					} else {
+						onSuccess([])
+					}
+				}, onError)
+			}, onError)
+		}, onError)
 	}
 
 	this.Index = Index;

@@ -292,6 +292,9 @@ var IndexFunction = function(){
 	}
 
 	Index.getMultipartsForArtifact = function(txid, onSuccess, onError){
+		if (!txid || typeof txid !== "string" || txid.length === 0)
+			return onError("You must input a search txid!")
+
 		var matched = [];
 
 		Index.getArtifactFromID(txid, function(artifact){

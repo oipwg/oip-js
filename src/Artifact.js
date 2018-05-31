@@ -641,6 +641,12 @@ class Artifact {
 				}
 			}
 
+			if (Array.isArray(this.Multiparts)){
+				this.Multiparts.sort(function(a, b){
+					return a.getPartNumber() - b.getPartNumber()
+				})
+			}
+
 			var jsonString = "";
 
 			for (var multiP of this.Multiparts){

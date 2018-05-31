@@ -335,6 +335,10 @@ var IndexFunction = function(){
 							}
 						}
 
+						matched.sort(function(a, b){
+							return a.getPartNumber() - b.getPartNumber()
+						})
+
 						onSuccess(matched);
 					} else {
 						onSuccess([])

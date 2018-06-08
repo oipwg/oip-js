@@ -113,10 +113,22 @@ class Artifact {
 		return this.artifact.info.tags
 	}
 	setDetail(detailNode, info){
+		if (typeof info === "string" && info.split(",").length > 1) {
+			this.artifact.details[detailNode] = info.split(",")
+		} else {
+			this.artifact.details[detailNode] = info
+		}
+
 		this.artifact.details[detailNode] = info;
 	}
 	getDetail(detailNode){
 		return this.artifact.details[detailNode]
+	}
+	setSignature(signature){
+		this.artifact.signature = signature
+	}
+	getSignature(){
+		return this.artifact.signature
 	}
 	setNetwork(network){
 		if (network === "ipfs")
@@ -294,14 +306,23 @@ class Artifact {
 					return {success: false, error: "No Artifact under Version!"}
 				}
 			} else if (artifact['oip-041']){
+				if (artifact['oip-041'].signature){
+					this.setSignature(artifact['oip-041'].signature)
+				}
+
 				if (artifact['oip-041'].artifact){
 					return this.import041(artifact['oip-041'].artifact)
 				} else {
 					return {success: false, error: "No Artifact under Version!"}
 				}
 			} else if (artifact.oip042){
+				if (artifact.oip042.signature){
+					this.setSignature(artifact.oip042.signature)
+				}
 				if (artifact.oip042.artifact){
 					return this.import042(artifact.oip042.artifact)
+				} else if (artifact.oip042.publish && artifact.oip042.publish.artifact){
+					return this.import042(artifact.oip042.publish.artifact)
 				} else {
 					return {success: false, error: "No Artifact under Version!"}
 				}
@@ -511,6 +532,9 @@ class Artifact {
 		}
 		if (artifact.subtype){
 			this.setSubtype(artifact.subtype)
+		}
+		if (artifact.signature){
+			this.setSignature(artifact.signature)
 		}
 		if (artifact.info){
 			if (artifact.info.title){

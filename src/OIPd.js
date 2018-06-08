@@ -1,8 +1,9 @@
 import * as jsonpatch from 'rfc6902';
 import MD5 from 'crypto-js/md5';
 
+import Artifact from './Artifact';
+
 var OIPdFunction = function(){
-	var Artifact = this.Artifact;
 	var Data = this.Data;
 	var Index = this.Index;
 	var Wallet = this.Wallet;
@@ -10,8 +11,8 @@ var OIPdFunction = function(){
 	var OIPd = {}
 
 	OIPd.MP_PREFIX = "oip-mp(";
-	OIPd.CHOP_MAX_LEN = 370;
-	OIPd.TXCOMMENT_MAX_LEN = 528;
+	OIPd.CHOP_MAX_LEN = 895;
+	OIPd.TXCOMMENT_MAX_LEN = 1056;
 
 	// returns signature directly
 	OIPd.signPublisher = function (name, address, time) {
@@ -51,14 +52,14 @@ var OIPdFunction = function(){
 		};
 
 		var time = OIPd.unixTime();
-		var ipfs = Artifact.getLocation(artJSON);
+		var ipfs = artJSON['oip-041'].artifact.storage.location;
 		var address = Wallet.getMainAddress('florincoin');
 
 		var signature = OIPd.signArtifact(ipfs, address, time);
 
 		artJSON['oip-041'].signature = signature;
-		artJSON["oip-041"]["artifact"].timestamp = time;
-		artJSON["oip-041"]["artifact"].publisher = address;
+		artJSON['oip-041'].artifact.timestamp = time;
+		artJSON['oip-041'].artifact.publisher = address;
 
 		return artJSON;
 	};
@@ -88,7 +89,18 @@ var OIPdFunction = function(){
 		var signedArtJSON = OIPd.signPublishArtifact(artifactJSON)
 
 		OIPd.calculatePublishFee(signedArtJSON, function(pubFeeFLO, pubFeeUSD){
-			OIPd.Send(signedArtJSON, pubFeeFLO, function (txIDs) {
+
+			var tmpArtifact = new Artifact();
+			tmpArtifact.fromJSON(signedArtJSON)
+			var tmpJSON = tmpArtifact.toJSON()
+
+			var pubArtifactJSON = {
+				"oip042": {
+					"publish": tmpJSON.oip042
+				}
+			}
+
+			OIPd.Send(pubArtifactJSON, pubFeeFLO, function (txIDs) {
 				onSuccess(txIDs)
 			}, function(error){
 				onError(error)

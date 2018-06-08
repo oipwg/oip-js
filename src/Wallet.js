@@ -165,6 +165,7 @@ var WalletFunction = function(){
 				Wallet.wallet.store();
 				Wallet.createAndEmitState(() => {
 					Wallet.refresh();
+					Wallet.wallet.store();
 				});
 				if (settings.debug){
 					console.log("TX Comment sent successfully!", success)

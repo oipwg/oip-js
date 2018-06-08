@@ -70,13 +70,17 @@ var OIPdFunction = function(){
 		var signature = OIPd.signPublisher(name, address, time);
 
 		var data = {
-			"alexandria-publisher": {
-				"name": name,
-				"address": address,
-				"timestamp": time,
-				"email": MD5(email).toString()
-			},
-			"signature": signature
+			"oip042": {
+				"register": {
+					"pub": {
+						"alias": name,
+						"floAddress": address,
+						"timestamp": time,
+						"authorized": [],
+						"signature": signature
+					}
+				}
+			}
 		};
 
 		OIPd.Send(data, function(txid){
@@ -139,12 +143,14 @@ var OIPdFunction = function(){
 		var signature = OIPd.signArtifactDeactivation(txid, address, time);
 
 		var data = {  
-			"oip-041":{  
-				"deactivateArtifact":{  
-					"txid": txid,
-					"timestamp": time
-				},
-				"signature": signature
+			"oip042": {  
+				"deactivate": {  
+					"artifact": {
+						"artifactID": txid,
+						"timestamp": time
+					},
+					"signature": signature
+				}
 			}
 		};
 

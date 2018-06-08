@@ -12,11 +12,11 @@ class Multipart {
 		// This is used to track a reference if someone pulled a multipart from an endpoint
 		this.txid = ""
 
-		if (inputString)
-			this.fromString(inputString)
-
 		if (txid)
 			this.setTXID(txid)
+
+		if (inputString)
+			this.fromString(inputString)
 	}
 	setPrefix(prefix){
 		this.prefix = prefix;
@@ -62,7 +62,7 @@ class Multipart {
 				"-" + this.choppedStringData;
 	}
 	validateSignature(){
-
+		return true;
 	}
 	setChoppedStringData(strData){
 		this.choppedStringData = strData;
@@ -86,19 +86,20 @@ class Multipart {
 		if (this.getPrefix() !== "oip-mp"){
 			return {success: false, message: "Invalid Multipart Prefix!"}
 		}
-		if (this.getPartNumber() <= 0){
-			return {success: false, message: "You must have at least 1 part number!"}
+		if (this.getPartNumber() < 0){
+			return {success: false, message: "Part number must be positive!"}
 		}
 		if (this.getPartNumber() > this.getTotalParts()){
 			return {success: false, message: "Part number too high for total parts!"}
 		}
-		if (this.getTotalParts() === 0){
+		if (this.getTotalParts() < 1){
 			return {success: false, message: "Must have more than one part to be a MULTIPART message!"}
 		}
 		if (this.getPublisherAddress() === ""){
 			return {success: false, message: "Must have a Publisher Address!"}
 		}
 		if (this.getFirstPartTXID() === "" && this.getPartNumber() !== 0){
+			console.log(this.getFirstPartTXID(), this.getPartNumber())
 			return {success: false, message: "Only the first part in a multipart message can have a blank first part TXID!"}
 		}
 		if (!this.validateSignature()){
@@ -143,9 +144,9 @@ class Multipart {
 			} else if (characters[i] === "," && prefixSet && parenValuesComplete < totalParenValues) {
 				switch(parenValuesComplete){
 					case 0:
-						this.setPartNumber(builtString);
+						this.setPartNumber(parseInt(builtString));
 					case 1:
-						this.setTotalParts(builtString);
+						this.setTotalParts(parseInt(builtString));
 					case 2:
 						this.setPublisherAddress(builtString);
 					case 3:
@@ -179,7 +180,5 @@ class Multipart {
 
 		// Set the final built string to the appended string data
 		this.setChoppedStringData(builtString);
-
-		return this.isValid()
 	}
 }

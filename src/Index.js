@@ -313,7 +313,9 @@ var IndexFunction = function(){
 			Index.getFloDataFromTXID(requestTXID, function(txFloData){
 				var firstMp = new Multipart(txFloData, requestTXID);
 
-				if (firstMp.isValid().success){
+				var valid = firstMp.isValid();
+
+				if (valid.success){
 					matched.push(firstMp);
 				} else {
 					try {

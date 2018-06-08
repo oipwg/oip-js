@@ -14,7 +14,7 @@ class Multipart {
 
 		if (inputString)
 			this.fromString(inputString)
-		
+
 		if (txid)
 			this.setTXID(txid)
 	}
@@ -76,6 +76,12 @@ class Multipart {
 	getTXID(){
 		return this.txid;
 	}
+	addJSONIdentifier(){
+		if (this.getPartNumber() === 0)
+			return "json:"
+
+		return ""
+	}
 	isValid(){
 		if (this.getPrefix() !== "oip-mp"){
 			return {success: false, message: "Invalid Multipart Prefix!"}
@@ -108,6 +114,7 @@ class Multipart {
 				this.getPublisherAddress() + "," +
 				this.getFirstPartTXID() + "," +
 				this.getSignature() + "):" +
+				this.addJSONIdentifier() +
 				this.getChoppedStringData();
 	}
 	fromString(multipartString){
@@ -152,7 +159,17 @@ class Multipart {
 				closeSet = true;
 
 				if (characters.length >= (i + 1) && characters[i + 1] === ":"){
-					i++;
+					// Check if we are prefixed with "json:", if so, skip ahead :)
+					if (characters.length >= (i + 2) && characters[i + 2] === "j" &&
+						characters.length >= (i + 3) && characters[i + 3] === "s" &&
+						characters.length >= (i + 4) && characters[i + 4] === "o" &&
+						characters.length >= (i + 5) && characters[i + 5] === "n" &&
+						characters.length >= (i + 6) && characters[i + 6] === ":")
+					{
+						i += 6;
+					} else {
+						i++;
+					}
 				}
 			} else {
 				// If we are not the first split point, then add our character to the build string

@@ -189,7 +189,7 @@ var OIPdFunction = function(){
 		if (txComment.length > OIPd.TXCOMMENT_MAX_LEN) {
 			OIPd.multiPart(txComment, publishFee, onSuccess, onError);
 		} else {
-			OIPd.sendTX(txComment, publishFee, onSuccess, onError);
+			OIPd.sendTX("json:" + txComment, publishFee, onSuccess, onError);
 		}
 	};
 
@@ -279,7 +279,12 @@ var OIPdFunction = function(){
 
 		var signature = Wallet.signMessage(publisherAddress, signaturePreImage);
 
-		var multiPartMessage = OIPd.MP_PREFIX + partNumber + "," + maxParts + "," + publisherAddress + "," + txidRef + "," + signature + "):" + stringPart;
+		var multiPartMessage = OIPd.MP_PREFIX + partNumber + "," + maxParts + "," + publisherAddress + "," + txidRef + "," + signature + "):"
+
+		if (partNumber === 0)
+			multiPartMessage += "json:"
+
+		multiPartMessage += stringPart;
 
 		return multiPartMessage;
 	}

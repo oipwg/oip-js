@@ -1,6 +1,6 @@
 module.exports =
 class Multipart {
-	constructor(){
+	constructor(inputString, txid){
 		this.prefix = "oip-mp";
 		this.partNumber = 0;
 		this.totalParts = 0;
@@ -11,6 +11,12 @@ class Multipart {
 
 		// This is used to track a reference if someone pulled a multipart from an endpoint
 		this.txid = ""
+
+		if (inputString)
+			this.fromString(inputString)
+		
+		if (txid)
+			this.setTXID(txid)
 	}
 	setPrefix(prefix){
 		this.prefix = prefix;
@@ -74,8 +80,8 @@ class Multipart {
 		if (this.getPrefix() !== "oip-mp"){
 			return {success: false, message: "Invalid Multipart Prefix!"}
 		}
-		if (this.getPartNumber() < 0){
-			return {success: false, message: "Part number must be a positive number!"}
+		if (this.getPartNumber() <= 0){
+			return {success: false, message: "You must have at least 1 part number!"}
 		}
 		if (this.getPartNumber() > this.getTotalParts()){
 			return {success: false, message: "Part number too high for total parts!"}

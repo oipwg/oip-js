@@ -260,8 +260,8 @@ var IndexFunction = function(){
 	}
 
 	Index.getPublisherArtifacts = function(pubAddress, onSuccess, onError){
-		Index.search({"protocol": "media", "search-on": "address", "search-for": id}, function(results){
-			onSuccess(results);
+		Index.search({"protocol": "media", "search-on": "address", "search-for": pubAddress}, function(results){
+			onSuccess(results.data);
 		}, function(err){
 			onError(err);
 		});
@@ -295,20 +295,34 @@ var IndexFunction = function(){
 		if (!txid || typeof txid !== "string" || txid.length === 0)
 			return onError("You must input a search txid!")
 
-		var matched = [];
+		var onContinue = function(artifact){
+			var matched = [];
+			var requestTXID = txid;
 
-		Index.getArtifactFromID(txid, function(artifact){
-			if (txid.length <= 4){
+			if (txid.length <= 4 && artifact && artifact.txid){
 				txid = artifact.txid;
 			}
 
-			Index.getFloDataFromTXID(artifact.txid, function(txFloData){
-				var firstMp = new Multipart();
+			if (artifact && artifact.txid){
+				requestTXID = artifact.txid;
+				if (txid.length <= 4){
+					txid = artifact.txid;
+				}
+			}
 
-				firstMp.fromString(txFloData);
-				firstMp.setTXID(artifact.txid);
+			Index.getFloDataFromTXID(requestTXID, function(txFloData){
+				var firstMp = new Multipart(txFloData, requestTXID);
 
-				matched.push(firstMp);
+				if (firstMp.isValid().success){
+					matched.push(firstMp);
+				} else {
+					try {
+						var tmpArt = new Artifact(JSON.parse(txFloData));
+						matched.push(tmpArt)
+					} catch (e) {
+						// Error
+					}
+				}
 
 				var floDataSearch = txid;
 
@@ -341,11 +355,13 @@ var IndexFunction = function(){
 
 						onSuccess(matched);
 					} else {
-						onSuccess([])
+						onSuccess(matched)
 					}
 				}, onError)
 			}, onError)
-		}, onError)
+		}
+
+		Index.getArtifactFromID(txid, onContinue, onContinue)
 	}
 
 	this.Index = Index;

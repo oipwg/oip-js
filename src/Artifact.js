@@ -9,17 +9,9 @@ const FLODATA_MAX_LEN = 528;
 
 module.exports =
 class Artifact {
-	constructor(Core){
-		this.Core = Core;
-
-		var tmpWalAddress;
-
-		if (this.Core && this.Core.Wallet){
-			tmpWalAddress = this.Core.Wallet.getMainAddress("florincoin")
-		}
-
+	constructor(json){
 		this.artifact = {
-			floAddress: tmpWalAddress || "",
+			floAddress: "",
 			info: {},
 			details: {},
 			storage: { network: DEFAULT_NETWORK, files: [] },
@@ -29,6 +21,10 @@ class Artifact {
 		this.FileObjects = [];
 		this.Multiparts = [];
 		this.fromMultipart = false;
+
+		if (json && !Array.isArray(json)){
+			this.fromJSON(json)
+		} 
 	}
 	setTXID(txid){
 		this.txid = txid;

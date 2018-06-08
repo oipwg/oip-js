@@ -319,7 +319,14 @@ var IndexFunction = function(){
 					matched.push(firstMp);
 				} else {
 					try {
-						var tmpArt = new Artifact(JSON.parse(txFloData));
+						var artJSON;
+
+						if (txFloData.substr(0,5) === "json:")
+							artJSON = JSON.parse(txFloData.substr(5, txFloData.length))
+						else
+							artJSON = JSON.parse(txFloData)
+
+						var tmpArt = new Artifact(artJSON);
 						matched.push(tmpArt)
 					} catch (e) {
 						// Error

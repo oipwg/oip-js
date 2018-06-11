@@ -1,4 +1,4 @@
-import Artifact from './Artifact';
+import Artifact from './Artifact.js';
 
 module.exports =
 class ArtifactFile {
@@ -15,7 +15,9 @@ class ArtifactFile {
 			}
 		}
 
-		if (parent && parent instanceof Artifact) {
+		// Check if we are being passed a parent
+		// If we are, compare the class names
+		if (parent && typeof parent === "object" && parent.getClassName() === "Artifact") {
 			this.parent = parent;
 		} else {
 			this.parent = new Artifact();

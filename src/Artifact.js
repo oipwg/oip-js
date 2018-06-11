@@ -9,7 +9,7 @@ const FLODATA_MAX_LEN = 528;
 
 module.exports =
 class Artifact {
-	constructor(json){
+	constructor(input){
 		this.artifact = {
 			floAddress: "",
 			info: {},
@@ -22,8 +22,17 @@ class Artifact {
 		this.Multiparts = [];
 		this.fromMultipart = false;
 
-		if (json && !Array.isArray(json)){
-			this.fromJSON(json)
+		if (input){
+			// If we are being passed in an array, it might be multiparts so try to load from that
+			if (Array.isArray(input) && input.length > 1 && input[0] instanceof Multipart){
+				this.fromMultipart(input)
+			} else if (typeof input === "string") {
+				try {
+					this.fromJSON(JSON.parse(input))
+				} catch (e) {}
+			} else if (typeof input === "object") {
+				this.fromJSON(input)
+			}
 		} 
 	}
 	setTXID(txid){
@@ -212,13 +221,9 @@ class Artifact {
 	}
 	addFile(file){
 		if (file instanceof ArtifactFile){
-			this.FileObjects.push(file);
-		} else {
-			var newFileObj = new ArtifactFile();
-
-			newFileObj.fromJSON(file);
-
-			this.FileObjects.push(newFileObj);
+			this.FileObjects.push(new ArtifactFile(file.toJSON(), this));
+		} else if (typeof file === "object" || typeof file === "string") {
+			this.FileObjects.push(new ArtifactFile(file, this));
 		}
 	}
 	getFiles(){

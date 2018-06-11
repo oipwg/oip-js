@@ -1,7 +1,25 @@
+import Artifact from './Artifact';
+
 module.exports =
 class ArtifactFile {
-	constructor(){
+	constructor(json, parent){
 		this.file = {}
+
+		if (json) {
+			if (typeof json === "object"){
+				this.fromJSON(json)
+			} else if (typeof json === "string") {
+				try {
+					this.fromJSON(JSON.parse(json))
+				} catch (e) { }
+			}
+		}
+
+		if (parent && parent instanceof Artifact) {
+			this.parent = parent;
+		} else {
+			this.parent = new Artifact();
+		}
 	}
 	setFilename(filename){
 		this.file.fname = filename;

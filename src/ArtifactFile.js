@@ -98,17 +98,47 @@ class ArtifactFile {
 	getLocation(){
 		return this.file.location
 	}
+	setPaymentScale(newScale){
+		this.file.scale = newScale
+	}
+	getPaymentScale(){
+		//	Check if scale is a string
+		// 		If so, check if the string is a number, or represented as a ratio
+		// 			return the parsed number or ratio bound
+		if (this.file.scale){
+			if (typeof this.file.scale === "string"){
+				if (isNaN(this.file.scale) && this.file.scale.split(":").length === 2){
+					return this.file.scale.split(":")[1]
+				} else if (!isNaN(this.file.scale)){
+					return parseInt(this.file.scale)
+				}
+			}
+
+			return this.file.scale
+		} else {
+			// If the local file scale is undefined, return the parent scale
+			return this.parent.getPaymentScale();
+		}
+	}
 	setSuggestedPlayCost(suggestedPlayCostFiat){
 		this.file.sugPlay = suggestedPlayCostFiat
 	}
 	getSuggestedPlayCost(){
-		return this.file.sugPlay
+		if (this.file.sugPlay && !isNaN(this.file.sugPlay)){
+			return this.file.sugPlay / this.getPaymentScale();
+		} else {
+			return 0
+		}
 	}
 	setSuggestedBuyCost(suggestedBuyCostFiat){
 		this.file.sugBuy = suggestedBuyCostFiat
 	}
 	getSuggestedBuyCost(){
-		return this.file.sugBuy
+		if (this.file.sugBuy && !isNaN(this.file.sugBuy)){
+			return this.file.sugBuy / this.getPaymentScale();
+		} else {
+			return 0
+		}
 	}
 	setDisallowPlay(disallowPlay){
 		this.file.disPlay = disallowPlay
@@ -183,6 +213,12 @@ class ArtifactFile {
 			}
 			if (fileObj.software){
 				this.setSoftware(fileObj.software)
+			}
+			if (fileObj.sugPlay){
+				this.setSuggestedPlayCost(fileObj.sugPlay)
+			}
+			if (fileObj.sugBuy){
+				this.setSuggestedBuyCost(fileObj.sugBuy)
 			}
 			if (fileObj.disPlay){
 				this.setDisallowPlay(fileObj.disPlay)

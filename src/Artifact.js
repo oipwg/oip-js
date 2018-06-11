@@ -160,7 +160,23 @@ class Artifact {
 		this.artifact.payment.scale = newScale;
 	}
 	getPaymentScale(){
-		return this.artifact.payment.scale
+		//	Check if scale is a string
+		// 		If so, check if the string is a number, or represented as a ratio
+		// 			return the parsed number or ratio bound
+		if (this.artifact.payment.scale){
+			if (typeof this.artifact.payment.scale === "string"){
+				if (isNaN(this.artifact.payment.scale) && this.artifact.payment.scale.split(":").length === 2){
+					return this.artifact.payment.scale.split(":")[1]
+				} else if (!isNaN(this.artifact.payment.scale)){
+					return parseInt(this.artifact.payment.scale)
+				}
+			}
+
+			return this.artifact.payment.scale
+		} else {
+			// Return 1:1 scale if undefined! The user should ALWAYS set scale ON PUBLISH if they are using a scale!
+			return 1;
+		}
 	}
 	setSuggestedTip(sugTipArray){
 		this.artifact.payment.tips = sugTipArray;

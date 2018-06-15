@@ -147,7 +147,8 @@ var IndexFunction = function(){
 
 	Index.search = function(options, onSuccess, onError){
 		Network.searchOIPd(options, function(results){
-			if (options.protocol === "media") {
+			// options.protocol might be undefined! It is not required to be passed.
+			if (!options.protocol || options.protocol === "media") {
 				let supported = Index.stripUnsupported(results);
 				let filtered = Index.filterArtifacts(supported);
 

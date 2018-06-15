@@ -340,6 +340,10 @@ class Artifact {
 					return this.import042(artifact.oip042.artifact)
 				} else if (artifact.oip042.publish && artifact.oip042.publish.artifact){
 					return this.import042(artifact.oip042.publish.artifact)
+				} else if (artifact.oip042.floAddress) {
+					// @TODO: Remove this once OIPd is fixed!
+					// Returned info is Malformed!!! Remove this code!
+					return this.import042(artifact.oip042)
 				} else {
 					return {success: false, error: "No Artifact under Version!"}
 				}

@@ -1,3 +1,5 @@
+[![](https://travis-ci.org/oipwg/oip-js.svg?branch=master)](https://travis-ci.org/oipwg/oip-js)
+[![](https://img.shields.io/npm/v/oip-js.svg)](https://www.npmjs.com/package/oip-js)
 # OIP-JS
 An NPM module containing all of the core functionality to run any OIP front end.
 

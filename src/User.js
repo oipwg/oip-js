@@ -81,6 +81,30 @@ var UserFunction = function(){
 
 	}
 
+	User.payForArtifact = function(artifact, artifact_file, payment_type){
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve({success: true, info: "Payment sent successfully!"})
+			}, 1000)
+		})
+	}
+
+	User.tipArtifact = function(artifact, artifact_file, amount, fiat){
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve({success: true, info: "Payment sent successfully!"})
+			}, 1000)
+		})
+	}
+
+	User.tipPublisher = function(publisher, amount, fiat){
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				resolve({success: true, info: "Payment sent successfully!"})
+			}, 1000)
+		})
+	}
+
 	this.User = User;
 
 	return this.User;
